@@ -1,4 +1,4 @@
-use glam::{DVec2, Vec2, dvec2};
+use glam::{DVec2, Vec2};
 use iced::{
     Element,
     Length::{Fill, FillPortion},
@@ -11,6 +11,8 @@ use parser::parse_func;
 
 mod graph;
 use graph::Graph;
+
+use crate::graph::ops::Op;
 
 pub const ZOOM_DEFAULT: f64 = 2.0;
 pub const ZOOM_WHEEL_SCALE: f64 = 0.2;
@@ -31,7 +33,7 @@ pub struct MainState {
 #[derive(Debug, Clone)]
 pub enum Message {
     EditText(text_editor::Action),
-    UpdateFactor(usize, f64),
+    UpdateOp(usize, u32, f32),
     PanningDelta(DVec2),
     UpdateZoom(f64),
     ZoomDelta(DVec2, Rectangle, f64),
@@ -46,9 +48,9 @@ impl MainState {
                     self.objects.push(fun)
                 }
             }
-            Message::UpdateFactor(i, factor) => {
-                if let Some(f) = self.graph.controls.factors.get_mut(i) {
-                    *f = factor
+            Message::UpdateOp(i, opcode, operand) => {
+                if let Some(f) = self.graph.controls.program.get_mut(i) {
+                    *f = Op { opcode, operand, _pad: Vec2::ZERO }
                 }
             }
             Message::PanningDelta(delta) => {

@@ -4,6 +4,8 @@ use iced::{
     widget::shader::{self, wgpu},
 };
 
+use crate::graph::ops::{Op, PROGRAM};
+
 pub const ZOOM_PIXELS_FACTOR: f64 = 200.0;
 
 #[derive(Copy, Clone, Debug, bytemuck::Pod, bytemuck::Zeroable)]
@@ -11,10 +13,9 @@ pub const ZOOM_PIXELS_FACTOR: f64 = 200.0;
 pub struct Uniforms {
     resolution: Vec2,
     center: Vec2,
+    ops: [Op; 6],
     scale: f32,
-    f2: f32,
-    f1: f32,
-    f0: f32,
+    _pad: f32,
 }
 
 struct FragmentShaderPipeline {
@@ -123,7 +124,7 @@ impl FragmentShaderPipeline {
 pub struct Controls {
     pub zoom: f64,
     pub center: DVec2,
-    pub factors: [f64; 3],
+    pub program: [Op; 6],
 }
 
 impl Controls {
@@ -137,7 +138,7 @@ impl Default for Controls {
         Self {
             zoom: 1.,
             center: DVec2::ZERO,
-            factors: [1., 0., 0.],
+            program: PROGRAM,
         }
     }
 }
@@ -169,7 +170,6 @@ impl shader::Primitive for FragmentShaderPrimitive {
 
         let pipeline = storage.get_mut::<FragmentShaderPipeline>().unwrap();
 
-        let (f2, f1, f0) = self.controls.factors.into();
         pipeline.update(
             queue,
             &Uniforms {
@@ -178,10 +178,9 @@ impl shader::Primitive for FragmentShaderPrimitive {
                     viewport.physical_height() as f32,
                 ),
                 center: self.controls.center.as_vec2(),
+                ops: self.controls.program,
                 scale: self.controls.scale() as f32,
-                f2: f2 as f32,
-                f1: f1 as f32,
-                f0: f0 as f32,
+                _pad: 0.,
             },
         );
     }

@@ -8,8 +8,11 @@ use iced::{
 };
 
 use crate::{Message, graph::graph_shader_pipeline::Controls};
+
 mod graph_shader_pipeline;
 use graph_shader_pipeline::FragmentShaderPrimitive;
+
+pub mod ops;
 
 #[derive(Default)]
 pub struct Graph {
