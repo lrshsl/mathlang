@@ -1,21 +1,10 @@
-use glam::Vec2;
+use glam::{DVec2, Vec2};
 use iced::{
     Rectangle,
     widget::shader::{self, wgpu},
 };
 
-pub const ZOOM_MIN: f32 = 1.0;
-pub const ZOOM_DEFAULT: f32 = 2.0;
-pub const ZOOM_MAX: f32 = 17.0;
-
-pub const ZOOM_PIXELS_FACTOR: f32 = 200.0;
-pub const ZOOM_WHEEL_SCALE: f32 = 0.2;
-
-const ITERS_MIN: u32 = 20;
-const ITERS_DEFAULT: u32 = 20;
-const ITERS_MAX: u32 = 200;
-
-const CENTER_DEFAULT: Vec2 = Vec2::new(-1.5, 0.0);
+pub const ZOOM_PIXELS_FACTOR: f64 = 200.0;
 
 #[derive(Copy, Clone, Debug, bytemuck::Pod, bytemuck::Zeroable)]
 #[repr(C)]
@@ -132,22 +121,22 @@ impl FragmentShaderPipeline {
 
 #[derive(Debug, Clone, Copy)]
 pub struct Controls {
-    zoom: f32,
-    center: Vec2,
-    factors: [f32; 3]
+    pub zoom: f64,
+    pub center: DVec2,
+    pub factors: [f64; 3],
 }
 
 impl Controls {
-    fn scale(&self) -> f32 {
-        1.0 / 2.0_f32.powf(self.zoom) / ZOOM_PIXELS_FACTOR
+    pub fn scale(&self) -> f64 {
+        1.0 / 2.0_f64.powf(self.zoom) / ZOOM_PIXELS_FACTOR
     }
 }
 
 impl Default for Controls {
     fn default() -> Self {
         Self {
-            zoom: ZOOM_DEFAULT,
-            center: CENTER_DEFAULT,
+            zoom: 1.,
+            center: DVec2::ZERO,
             factors: [1., 0., 0.],
         }
     }
@@ -155,7 +144,7 @@ impl Default for Controls {
 
 #[derive(Debug)]
 pub struct FragmentShaderPrimitive {
-    controls: Controls
+    controls: Controls,
 }
 
 impl FragmentShaderPrimitive {
@@ -171,7 +160,7 @@ impl shader::Primitive for FragmentShaderPrimitive {
         queue: &wgpu::Queue,
         format: wgpu::TextureFormat,
         storage: &mut shader::Storage,
-        bounds: &Rectangle,
+        _bounds: &Rectangle,
         viewport: &shader::Viewport,
     ) {
         if !storage.has::<FragmentShaderPipeline>() {
@@ -188,9 +177,11 @@ impl shader::Primitive for FragmentShaderPrimitive {
                     viewport.physical_width() as f32,
                     viewport.physical_height() as f32,
                 ),
-                center: self.controls.center,
-                scale: self.controls.scale(),
-                f2, f1, f0,
+                center: self.controls.center.as_vec2(),
+                scale: self.controls.scale() as f32,
+                f2: f2 as f32,
+                f1: f1 as f32,
+                f0: f0 as f32,
             },
         );
     }

@@ -1,12 +1,9 @@
-use glam::Vec2;
+use glam::{DVec2, Vec2, dvec2};
 use iced::{
     Element,
     Length::{Fill, FillPortion},
     Pixels, Rectangle, Theme,
-    widget::{
-        self, column, container, row,
-        text, text_editor, vertical_space,
-    },
+    widget::{self, column, container, row, text, text_editor, vertical_space},
 };
 
 mod parser;
@@ -14,6 +11,9 @@ use parser::parse_func;
 
 mod graph;
 use graph::Graph;
+
+pub const ZOOM_DEFAULT: f64 = 2.0;
+pub const ZOOM_WHEEL_SCALE: f64 = 0.2;
 
 fn main() -> iced::Result {
     iced::application("MathLang", MainState::update, MainState::view)
@@ -31,7 +31,10 @@ pub struct MainState {
 #[derive(Debug, Clone)]
 pub enum Message {
     EditText(text_editor::Action),
-    ZoomDelta(Vec2, Rectangle, f32),
+    UpdateFactor(usize, f64),
+    PanningDelta(DVec2),
+    UpdateZoom(f64),
+    ZoomDelta(DVec2, Rectangle, f64),
 }
 
 impl MainState {
@@ -43,7 +46,27 @@ impl MainState {
                     self.objects.push(fun)
                 }
             }
-            Message::ZoomDelta(_vec2, _rectangle, _factor) => todo!(),
+            Message::UpdateFactor(i, factor) => {
+                if let Some(f) = self.graph.controls.factors.get_mut(i) {
+                    *f = factor
+                }
+            }
+            Message::PanningDelta(delta) => {
+                self.graph.controls.center -= 2.0 * delta * self.graph.controls.scale();
+            }
+            Message::UpdateZoom(zoom) => {
+                self.graph.controls.zoom = zoom;
+            }
+            Message::ZoomDelta(_pos, _bounds, delta) => {
+                let delta = delta * ZOOM_WHEEL_SCALE;
+                // let prev_scale = self.graph.controls.scale();
+                let prev_zoom = self.graph.controls.zoom;
+                self.graph.controls.zoom = prev_zoom + delta;
+
+                // let vec = pos - dvec2(bounds.width.into(), bounds.height.into()) * 0.5;
+                // let new_scale = self.graph.controls.scale();
+                // self.graph.controls.center += vec * (prev_scale - new_scale) * 2.0;
+            }
         }
     }
 }

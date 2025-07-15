@@ -1,4 +1,6 @@
 
+const STROKE_WIDTH: f32 = 1.;
+
 struct Uniforms {
 	resolution: vec2f,
 	center: vec2f,
@@ -27,14 +29,28 @@ fn vs_main(in: VertexIn) -> VertexOut {
 
 @fragment
 fn fs_main(in: VertexOut) -> @location(0) vec4f {
-	let p = u.center + (in.position.xy - u.resolution * .5) * u.scale;
+	let d = u.scale * STROKE_WIDTH;
 
-	let res = u.f2 * p.x * p.x + u.f1 * p.x + u.f0;
+	var p = u.center + (in.position.xy - u.resolution * .5) * u.scale;
+	p.y = -p.y; // invert y axis for mathematics
 
-	if abs(res - p.y) < 1e-3 {
+	let dx = 1.0;
+	let dy = 2.0 * u.f2 * p.x + u.f1;
+	let tangent = normalize(vec2f(dx, dy));
+	let normal = vec2f(-tangent.y, tangent.x); // perpendicular to tangent
+
+	let curve_y = u.f2 * p.x * p.x + u.f1 * p.x + u.f0;
+	let curve_pos = vec2f(p.x, curve_y);
+
+	let dist = abs(dot(p - curve_pos, normal)); // distance from pixel to curve
+
+	if dist < d {
 		return vec4f(1., 1., 1., 1.);
 	}
+	if abs(p.x) < d || abs(p.y) < d {
+		return vec4f(0.1, 0.1, 0.1, 1.);
+	}
+
 	return vec4f(0., 0., 0., 1.);
 }
 
-// vim: ft=rs
