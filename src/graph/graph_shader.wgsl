@@ -3,8 +3,7 @@ const STROKE_WIDTH: f32 = 1.;
 
 struct Op {
 	opcode: u32,
-	operand: f32,
-	_pad2: vec2f,
+	operands: vec2f,
 }
 
 struct Uniforms {
@@ -44,7 +43,7 @@ fn eval_function(x: f32) -> f32 {
                 stack[sp] = op.operand;
                 sp = sp + 1u;
             }
-            case 1u: { // CONST_X
+            case 1u: { // X
                 stack[sp] = x;
                 sp = sp + 1u;
             }
@@ -63,8 +62,14 @@ fn eval_function(x: f32) -> f32 {
                 let a = stack[sp - 1u];
                 stack[sp - 1u] = a + b;
             }
+            case 5u: { // MUL
+                let b = stack[sp - 1u];
+                sp = sp - 1u;
+                let a = stack[sp - 1u];
+                stack[sp - 1u] = a * b;
+            }
 				default: {}
-            // More ops like MUL, SUB, DIV, COS, LOG, EXP, etc.
+            // More ops like COS, LOG, EXP, etc.
         }
     }
 

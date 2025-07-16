@@ -2,7 +2,7 @@ use glam::{DVec2, Vec2};
 use iced::{
     Element,
     Length::{Fill, FillPortion},
-    Pixels, Rectangle, Theme,
+    Rectangle, Theme,
     widget::{self, column, container, row, text, text_editor, vertical_space},
 };
 
@@ -12,7 +12,10 @@ use parser::parse_func;
 mod graph;
 use graph::Graph;
 
-use crate::graph::ops::Op;
+mod ops;
+mod ast;
+
+use crate::ops::Op;
 
 pub const ZOOM_DEFAULT: f64 = 2.0;
 pub const ZOOM_WHEEL_SCALE: f64 = 0.2;
@@ -26,8 +29,8 @@ fn main() -> iced::Result {
 #[derive(Default)]
 pub struct MainState {
     text: text_editor::Content,
-    objects: Vec<Box<dyn FnOnce(f64) -> f64>>,
     graph: Graph,
+    program: Vec<Op>,
 }
 
 #[derive(Debug, Clone)]
@@ -45,12 +48,16 @@ impl MainState {
             Message::EditText(action) => {
                 self.text.perform(action);
                 if let Ok((_name, fun)) = parse_func(&self.text.text()) {
-                    self.objects.push(fun)
+                    self.program.push(Func::new(new, fun))
                 }
             }
             Message::UpdateOp(i, opcode, operand) => {
                 if let Some(f) = self.graph.controls.program.get_mut(i) {
-                    *f = Op { opcode, operand, _pad: Vec2::ZERO }
+                    *f = Op {
+                        opcode,
+                        operand,
+                        _pad: Vec2::ZERO,
+                    }
                 }
             }
             Message::PanningDelta(delta) => {
@@ -99,7 +106,7 @@ impl MainState {
                     .height(Fill)
                     .on_action(Message::EditText)
             )
-            .width(Pixels(500.0))
+            .width(FillPortion(30))
             .height(FillPortion(90))
             .style(container::rounded_box),
             row![].height(FillPortion(4)),
@@ -112,7 +119,7 @@ impl MainState {
             container(widget::shader(&self.graph).height(Fill).width(Fill))
                 .style(container::rounded_box)
                 .height(Fill)
-                .width(Fill),
+                .width(FillPortion(70)),
         ]
         .into()
     }

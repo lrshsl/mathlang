@@ -4,7 +4,7 @@ use iced::{
     widget::shader::{self, wgpu},
 };
 
-use crate::graph::ops::{Op, PROGRAM};
+use crate::ops::{Op, PROGRAM};
 
 pub const ZOOM_PIXELS_FACTOR: f64 = 200.0;
 
