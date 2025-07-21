@@ -1,4 +1,3 @@
-
 pub const OP_CONST: u32 = 0;
 pub const OP_INPUT_X: u32 = 1;
 pub const OP_ADD: u32 = 3;

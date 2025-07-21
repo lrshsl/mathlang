@@ -190,7 +190,7 @@ impl FragmentShaderPipeline {
         viewport: Rectangle<u32>,
     ) {
         let mut pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
-            label: Some("fill color test"),
+            label: Some("RenderPass"),
             color_attachments: &[Some(wgpu::RenderPassColorAttachment {
                 view: target,
                 resolve_target: None,

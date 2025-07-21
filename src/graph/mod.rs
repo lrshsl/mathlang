@@ -7,10 +7,13 @@ use iced::{
     widget::shader,
 };
 
-use crate::{graph::{fragment_shader_primitive::FragmentShaderPrimitive, graph_shader_pipeline::Controls}, Message};
+use crate::{
+    Message,
+    graph::{fragment_shader_primitive::FragmentShaderPrimitive, graph_shader_pipeline::Controls},
+};
 
-mod graph_shader_pipeline;
 mod fragment_shader_primitive;
+mod graph_shader_pipeline;
 pub mod ops;
 
 #[derive(Default)]
