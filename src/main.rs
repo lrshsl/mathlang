@@ -14,6 +14,8 @@ use parser::parse_func;
 mod graph;
 use graph::Graph;
 
+use crate::parser::parse;
+
 pub const ZOOM_DEFAULT: f64 = 2.0;
 pub const ZOOM_WHEEL_SCALE: f64 = 0.2;
 
@@ -42,8 +44,9 @@ impl MainState {
         match msg {
             Message::EditText(action) => {
                 self.text.perform(action);
-                if let Ok((_name, inst)) = parse_func(&self.text.text()) {
-                    self.graph.instructions = Arc::new(vec![inst]);
+                if let Ok(prog) = parse(&self.text.text()) {
+                    self.graph.instructions =
+                        Arc::new(prog.into_iter().map(|(_, f)| f).collect::<Vec<_>>());
                     self.graph.instructions_dirty = true;
                 }
             }
