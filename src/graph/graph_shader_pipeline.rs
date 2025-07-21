@@ -4,7 +4,7 @@ use iced::{
     widget::shader::wgpu::{self, util::DeviceExt as _},
 };
 
-use super::{fragment_shader_primitive::INSTRUCTIONS, ops::Instruction};
+use super::ops::Instruction;
 
 pub const ZOOM_PIXELS_FACTOR: f64 = 200.0;
 
@@ -25,7 +25,6 @@ pub struct FragmentShaderPipeline {
     uniform_buffer: wgpu::Buffer,
     bind_group_0: wgpu::BindGroup,
 
-    stack_buffer: wgpu::Buffer,
     instruction_buffer: wgpu::Buffer,
     bind_group_1: wgpu::BindGroup,
 }
@@ -35,7 +34,6 @@ impl FragmentShaderPipeline {
         device: &wgpu::Device,
         format: wgpu::TextureFormat,
         instructions: &'static [Instruction],
-        stack_len: usize,
     ) -> Self {
         let shader = device.create_shader_module(wgpu::ShaderModuleDescriptor {
             label: Some("FragmentShaderPipeline shader"),
@@ -61,28 +59,16 @@ impl FragmentShaderPipeline {
         let bind_group_layout_1 =
             device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
                 label: Some("BindGroupLayout1"),
-                entries: &[
-                    wgpu::BindGroupLayoutEntry {
-                        binding: 0,
-                        visibility: wgpu::ShaderStages::FRAGMENT,
-                        ty: wgpu::BindingType::Buffer {
-                            ty: wgpu::BufferBindingType::Storage { read_only: false },
-                            has_dynamic_offset: false,
-                            min_binding_size: None,
-                        },
-                        count: None,
+                entries: &[wgpu::BindGroupLayoutEntry {
+                    binding: 0,
+                    visibility: wgpu::ShaderStages::FRAGMENT,
+                    ty: wgpu::BindingType::Buffer {
+                        ty: wgpu::BufferBindingType::Storage { read_only: true },
+                        has_dynamic_offset: false,
+                        min_binding_size: None,
                     },
-                    wgpu::BindGroupLayoutEntry {
-                        binding: 1,
-                        visibility: wgpu::ShaderStages::FRAGMENT,
-                        ty: wgpu::BindingType::Buffer {
-                            ty: wgpu::BufferBindingType::Storage { read_only: true },
-                            has_dynamic_offset: false,
-                            min_binding_size: None,
-                        },
-                        count: None,
-                    },
-                ],
+                    count: None,
+                }],
             });
 
         let pipeline_layout = device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
@@ -121,13 +107,6 @@ impl FragmentShaderPipeline {
             mapped_at_creation: false,
         });
 
-        let stack_buffer = device.create_buffer(&wgpu::BufferDescriptor {
-            label: Some("StackBuffer"),
-            size: (stack_len * std::mem::size_of::<f32>()) as u64,
-            usage: wgpu::BufferUsages::STORAGE | wgpu::BufferUsages::COPY_DST,
-            mapped_at_creation: false,
-        });
-
         let instruction_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
             label: Some("InstructionBuffer"),
             contents: bytemuck::cast_slice(instructions),
@@ -145,16 +124,10 @@ impl FragmentShaderPipeline {
         let bind_group_1 = device.create_bind_group(&wgpu::BindGroupDescriptor {
             label: Some("BindGroup1"),
             layout: &bind_group_layout_1,
-            entries: &[
-                wgpu::BindGroupEntry {
-                    binding: 0,
-                    resource: stack_buffer.as_entire_binding(),
-                },
-                wgpu::BindGroupEntry {
-                    binding: 1,
-                    resource: instruction_buffer.as_entire_binding(),
-                },
-            ],
+            entries: &[wgpu::BindGroupEntry {
+                binding: 0,
+                resource: instruction_buffer.as_entire_binding(),
+            }],
         });
 
         Self {
@@ -162,7 +135,6 @@ impl FragmentShaderPipeline {
             uniform_buffer,
             bind_group_0,
             instruction_buffer,
-            stack_buffer,
             bind_group_1,
         }
     }
@@ -171,13 +143,7 @@ impl FragmentShaderPipeline {
         queue.write_buffer(&self.uniform_buffer, 0, bytemuck::bytes_of(uniforms));
     }
 
-    pub fn update_program(
-        &self,
-        queue: &wgpu::Queue,
-        stack_data: &[f32],
-        instructions: &[Instruction],
-    ) {
-        queue.write_buffer(&self.stack_buffer, 0, bytemuck::cast_slice(stack_data));
+    pub fn update_program(&self, queue: &wgpu::Queue, instructions: &[Instruction]) {
         queue.write_buffer(
             &self.instruction_buffer,
             0,
@@ -226,7 +192,6 @@ impl FragmentShaderPipeline {
 pub struct Controls {
     pub zoom: f64,
     pub center: DVec2,
-    pub instructions: [Instruction; 3],
 }
 
 impl Controls {
@@ -240,7 +205,6 @@ impl Default for Controls {
         Self {
             zoom: 1.,
             center: DVec2::ZERO,
-            instructions: INSTRUCTIONS,
         }
     }
 }

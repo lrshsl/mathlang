@@ -5,7 +5,7 @@ use nom::{
 };
 
 use crate::{
-    graph::ops::{Instruction, OP_INPUT_X},
+    graph::ops::{Instruction, OP_X},
     inst,
 };
 
@@ -25,15 +25,15 @@ pub fn parse_func(s: &str) -> Result<(&str, Instruction), String> {
         ident = preceded(ws, take_while1(AsChar::is_alpha));
     ];
 
-    let (_, name) = ident
-        .parse(s)
-        .map_err(|e| format!("Incomplete input: expected ident: {e}"))?;
+    // let (_, name) = ident
+    //     .parse(s)
+    //     .map_err(|e| format!("Incomplete input: expected ident: {e}"))?;
 
-    let (_, _) = preceded(ws, tag("="))
-        .parse(s)
-        .map_err(|e| format!("Incomplete input: expected '=': {e}"))?;
+    // let (_, _) = preceded(ws, tag("="))
+    //     .parse(s)
+    //     .map_err(|e| format!("Incomplete input: expected '=': {e}"))?;
 
-    Ok((name, inst!(OP_INPUT_X, 0., 0.)))
+    Ok(("", inst!(OP_X)))
 }
 
 // pub fn parse(s: &str) -> Result<Vec<Instruction>, String> {

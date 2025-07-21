@@ -1,3 +1,5 @@
+use std::sync::Arc;
+
 use glam::{DVec2, dvec2};
 use iced::{
     Rectangle,
@@ -9,7 +11,10 @@ use iced::{
 
 use crate::{
     Message,
-    graph::{fragment_shader_primitive::FragmentShaderPrimitive, graph_shader_pipeline::Controls},
+    graph::{
+        fragment_shader_primitive::FragmentShaderPrimitive, graph_shader_pipeline::Controls,
+        ops::Instruction,
+    },
 };
 
 mod fragment_shader_primitive;
@@ -19,6 +24,8 @@ pub mod ops;
 #[derive(Default)]
 pub struct Graph {
     pub controls: Controls,
+    pub instructions: Arc<Vec<Instruction>>,
+    pub instructions_dirty: bool,
 }
 
 impl shader::Program<Message> for Graph {
@@ -31,7 +38,11 @@ impl shader::Program<Message> for Graph {
         _cursor: mouse::Cursor,
         _bounds: Rectangle,
     ) -> Self::Primitive {
-        FragmentShaderPrimitive::new(self.controls)
+        FragmentShaderPrimitive::new(
+            self.controls,
+            Arc::clone(&self.instructions),
+            self.instructions_dirty,
+        )
     }
 
     fn update(

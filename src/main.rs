@@ -1,9 +1,11 @@
-use glam::{DVec2, Vec2};
+use std::sync::Arc;
+
+use glam::DVec2;
 use iced::{
     Element,
     Length::{Fill, FillPortion},
     Rectangle, Theme,
-    widget::{self, column, container, row, text, text_editor, vertical_space},
+    widget::{self, column, container, row, text, text_editor::Action, vertical_space},
 };
 
 mod parser;
@@ -11,8 +13,6 @@ use parser::parse_func;
 
 mod graph;
 use graph::Graph;
-
-use crate::graph::ops::{Instruction, OP_INPUT_X};
 
 pub const ZOOM_DEFAULT: f64 = 2.0;
 pub const ZOOM_WHEEL_SCALE: f64 = 0.2;
@@ -25,15 +25,13 @@ fn main() -> iced::Result {
 
 #[derive(Default)]
 pub struct MainState {
-    text: text_editor::Content,
+    text: widget::text_editor::Content,
     graph: Graph,
-    program: Vec<Instruction>,
 }
 
 #[derive(Debug, Clone)]
 pub enum Message {
-    EditText(text_editor::Action),
-    UpdateOp(usize, u32, f32),
+    EditText(widget::text_editor::Action),
     PanningDelta(DVec2),
     UpdateZoom(f64),
     ZoomDelta(DVec2, Rectangle, f64),
@@ -45,12 +43,8 @@ impl MainState {
             Message::EditText(action) => {
                 self.text.perform(action);
                 if let Ok((_name, inst)) = parse_func(&self.text.text()) {
-                    self.program.push(inst)
-                }
-            }
-            Message::UpdateOp(i, opcode, operand) => {
-                if let Some(f) = self.graph.controls.instructions.get_mut(i) {
-                    *f = inst!(OP_INPUT_X, 0., 0.)
+                    self.graph.instructions = Arc::new(vec![inst]);
+                    self.graph.instructions_dirty = true;
                 }
             }
             Message::PanningDelta(delta) => {
@@ -93,7 +87,7 @@ impl MainState {
         column![
             text("Editor").size(30).height(FillPortion(6)),
             container(
-                text_editor(&self.text)
+                widget::text_editor(&self.text)
                     .placeholder("Enter equation..")
                     .size(30)
                     .height(Fill)

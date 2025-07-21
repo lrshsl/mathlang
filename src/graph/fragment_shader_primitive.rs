@@ -1,10 +1,12 @@
+use std::sync::Arc;
+
 use glam::{Vec2, vec2};
 use iced::{
     Rectangle,
     widget::shader::{self, wgpu},
 };
 
-use super::ops::{Instruction, OP_INPUT_X, OP_SIN};
+use super::ops::*;
 use crate::{
     graph::{
         Controls,
@@ -14,7 +16,11 @@ use crate::{
 };
 
 pub const N_INST: usize = 3;
-pub const INSTRUCTIONS: [Instruction; N_INST] = [inst!(1, 0., 0.), inst!(0, 2., 0.), inst!(3, 0., 0.)];
+pub const INSTRUCTIONS: [Instruction; N_INST] = [
+    inst!(OP_X_POLY, -1., 3.),
+    inst!(OP_CONST, -1.),
+    inst!(OP_ADD),
+];
 
 pub const STACK_SIZE: usize = 16;
 pub const INITIAL_STACK: [f32; STACK_SIZE] = [0.; STACK_SIZE];
@@ -22,11 +28,21 @@ pub const INITIAL_STACK: [f32; STACK_SIZE] = [0.; STACK_SIZE];
 #[derive(Debug)]
 pub struct FragmentShaderPrimitive {
     controls: Controls,
+    instructions: Arc<Vec<Instruction>>,
+    pub instructions_dirty: bool,
 }
 
 impl FragmentShaderPrimitive {
-    pub fn new(controls: Controls) -> Self {
-        Self { controls }
+    pub fn new(
+        controls: Controls,
+        instructions: Arc<Vec<Instruction>>,
+        instructions_dirty: bool,
+    ) -> Self {
+        Self {
+            controls,
+            instructions,
+            instructions_dirty,
+        }
     }
 }
 
@@ -41,12 +57,7 @@ impl shader::Primitive for FragmentShaderPrimitive {
         viewport: &shader::Viewport,
     ) {
         if !storage.has::<FragmentShaderPipeline>() {
-            storage.store(FragmentShaderPipeline::new(
-                device,
-                format,
-                &INSTRUCTIONS,
-                STACK_SIZE,
-            ));
+            storage.store(FragmentShaderPipeline::new(device, format, &INSTRUCTIONS));
         }
 
         let pipeline = storage.get_mut::<FragmentShaderPipeline>().unwrap();
@@ -72,8 +83,8 @@ impl shader::Primitive for FragmentShaderPrimitive {
                 _pad1: Vec2::ZERO,
             },
         );
-        if false {
-            pipeline.update_program(queue, &INITIAL_STACK, &INSTRUCTIONS);
+        if self.instructions_dirty {
+            pipeline.update_program(queue, &self.instructions);
         }
     }
 
