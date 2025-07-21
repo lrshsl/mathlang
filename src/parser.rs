@@ -48,7 +48,7 @@ pub fn parse_exprs(s: &'_ str) -> Result<(&'_ str, Polynom<'_>), String> {
 
     let (s, factor) = parse!(preceded(ws, nom::number::float()), s)?;
     let (s, var) = parse!(preceded(ws, ident), s)?;
-    let (s, exponent) = parse!(preceded(exact("**"), nom::number::float()), s)?;
+    let (s, exponent) = parse!(preceded(exact("**"), preceded(ws, nom::number::float())), s)?;
     Ok((
         s,
         Polynom {
