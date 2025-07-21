@@ -1,33 +1,43 @@
 
 const STROKE_WIDTH: f32 = 1.;
 
-struct Op {
+struct Instruction {
 	opcode: u32,
-	operands: vec2f,
+	a: f32,
+	b: f32,
 }
 
 struct Uniforms {
 	resolution: vec2f,
 	center: vec2f,
-	program: array<Op, 6>,
 	scale: f32,
+	_pad: f32,
 }
 
-@group(0) @binding(0) var<uniform> u: Uniforms;
+@group(0) @binding(0)
+var<uniform> u: Uniforms;
+
+@group(1) @binding(0)
+var<storage, read_write> stack: array<f32, 16>;
+
+@group(1) @binding(1)
+var<storage, read> instructions: array<Instruction>;
 
 struct VertexIn {
-	@builtin(vertex_index) vertex_index: u32,
+	@builtin(vertex_index)
+	vertex_index: u32,
 }
 
 struct VertexOut {
-	@builtin(position) position: vec4f,
+	@builtin(position)
+	position: vec4f,
 }
 
 @vertex
 fn vs_main(in: VertexIn) -> VertexOut {
-	let uv = vec2f(vec2u((in.vertex_index << 1) & 2, in.vertex_index & 2));
-	let position = vec4f(uv * 2. - 1., 0., 1.);
-	return VertexOut(position);
+    let uv = vec2f(vec2u((in.vertex_index << 1) & 2, in.vertex_index & 2));
+    let position = vec4f(uv * 2. - 1., 0., 1.);
+    return VertexOut(position);
 }
 
 // Interprets a mathematical operation on the GPU
@@ -36,11 +46,11 @@ fn eval_function(x: f32) -> f32 {
     var sp: u32 = 0;
 
     for (var i: u32 = 0u; i < 6; i = i + 1u) {
-        let op = u.program[i];
+        let op = instructions[i];
 
         switch op.opcode {
             case 0u: { // CONST
-                stack[sp] = op.operand;
+                stack[sp] = op.a;
                 sp = sp + 1u;
             }
             case 1u: { // X
@@ -78,12 +88,14 @@ fn eval_function(x: f32) -> f32 {
 
 @fragment
 fn fs_main(in: VertexOut) -> @location(0) vec4f {
+	_ = instructions; 
+	_ = stack; 
 	let d = u.scale * STROKE_WIDTH;
 
-	var p = u.center + (in.position.xy - u.resolution * .5) * u.scale;
-	p.y = -p.y; // invert y axis for mathematics
+    var p = u.center + (in.position.xy - u.resolution * .5) * u.scale;
+    p.y = -p.y; // invert y axis for mathematics
 
-	let curve_y = eval_function(p.x);
+    let curve_y = eval_function(p.x);
 
 	// Derivative -> normal vector -> distance from curve
 	//let dx = 0.001;
@@ -92,15 +104,15 @@ fn fs_main(in: VertexOut) -> @location(0) vec4f {
 	//let normal = vec2f(-tangent.y, tangent.x);
 
 	//let dist = abs(dot(p - vec2f(p.x, curve_y), normal));
-	let dist = abs(p.y - curve_y);
+    let dist = abs(p.y - curve_y);
 
-	if dist < d {
-		return vec4f(1., 1., 1., 1.);
-	}
-	if abs(p.x) < d || abs(p.y) < d {
-		return vec4f(0.1, 0.1, 0.1, 1.);
-	}
+    if dist < d {
+        return vec4f(1., 1., 1., 1.);
+    }
+    if abs(p.x) < d || abs(p.y) < d {
+        return vec4f(0.1, 0.1, 0.1, 1.);
+    }
 
-	return vec4f(0., 0., 0., 1.);
+    return vec4f(0., 0., 0., 1.);
 }
 

@@ -7,10 +7,11 @@ use iced::{
     widget::shader,
 };
 
-use crate::{Message, graph::graph_shader_pipeline::Controls};
+use crate::{graph::{fragment_shader_primitive::FragmentShaderPrimitive, graph_shader_pipeline::Controls}, Message};
 
 mod graph_shader_pipeline;
-use graph_shader_pipeline::FragmentShaderPrimitive;
+mod fragment_shader_primitive;
+pub mod ops;
 
 #[derive(Default)]
 pub struct Graph {

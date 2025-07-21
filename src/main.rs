@@ -12,10 +12,7 @@ use parser::parse_func;
 mod graph;
 use graph::Graph;
 
-mod ops;
-mod ast;
-
-use crate::ops::Op;
+use crate::graph::ops::{Instruction, OP_INPUT_X};
 
 pub const ZOOM_DEFAULT: f64 = 2.0;
 pub const ZOOM_WHEEL_SCALE: f64 = 0.2;
@@ -30,7 +27,7 @@ fn main() -> iced::Result {
 pub struct MainState {
     text: text_editor::Content,
     graph: Graph,
-    program: Vec<Op>,
+    program: Vec<Instruction>,
 }
 
 #[derive(Debug, Clone)]
@@ -47,17 +44,13 @@ impl MainState {
         match msg {
             Message::EditText(action) => {
                 self.text.perform(action);
-                if let Ok((_name, fun)) = parse_func(&self.text.text()) {
-                    self.program.push(Func::new(new, fun))
+                if let Ok((_name, inst)) = parse_func(&self.text.text()) {
+                    self.program.push(inst)
                 }
             }
             Message::UpdateOp(i, opcode, operand) => {
-                if let Some(f) = self.graph.controls.program.get_mut(i) {
-                    *f = Op {
-                        opcode,
-                        operand,
-                        _pad: Vec2::ZERO,
-                    }
+                if let Some(f) = self.graph.controls.instructions.get_mut(i) {
+                    *f = inst!(OP_INPUT_X, 0., 0.)
                 }
             }
             Message::PanningDelta(delta) => {

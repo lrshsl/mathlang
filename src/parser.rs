@@ -4,7 +4,10 @@ use nom::{
     sequence::preceded,
 };
 
-pub type Func = Box<dyn FnOnce(f64) -> f64>;
+use crate::{
+    graph::ops::{Instruction, OP_INPUT_X},
+    inst,
+};
 
 macro_rules! define_parsers {
     [ $( $name:ident = $body:expr );* $(;)? ] => {
@@ -16,7 +19,7 @@ macro_rules! define_parsers {
     };
 }
 
-pub fn parse_func(s: &str) -> Result<(&str, Func), String> {
+pub fn parse_func(s: &str) -> Result<(&str, Instruction), String> {
     define_parsers![
         ws = take_while1(AsChar::is_space);
         ident = preceded(ws, take_while1(AsChar::is_alpha));
@@ -30,5 +33,11 @@ pub fn parse_func(s: &str) -> Result<(&str, Func), String> {
         .parse(s)
         .map_err(|e| format!("Incomplete input: expected '=': {e}"))?;
 
-    Ok((name, Box::new(|x| x)))
+    Ok((name, inst!(OP_INPUT_X, 0., 0.)))
 }
+
+// pub fn parse(s: &str) -> Result<Vec<Instruction>, String> {
+//     Ok((name, vec![
+//         inst!(OP_INPUT_X, 0., 0.),
+//     ]))
+// }
