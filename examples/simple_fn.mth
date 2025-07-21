@@ -1,0 +1,18 @@
+
+
+f(x) = { x };
+g(x) = { 2x };
+
+square(pos, size) = {
+	tl = vec2(pos.x, pos.y + size);
+	br = vec2(pos.x + size, pos.y);
+	tr = vec2(pos.x + size, pos.y + size);
+
+	line(pos, br);
+	line(pos, tl);
+	line(tl, tr);
+	line(br, tr);
+};
+
+plot(f);
+
