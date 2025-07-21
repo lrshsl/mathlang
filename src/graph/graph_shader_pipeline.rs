@@ -44,14 +44,13 @@ impl FragmentShaderPipeline {
 
         let bind_group_layout_0 =
             device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
-                label: Some("Bind Group 0 Layout"),
+                label: Some("BindGroupLayout0"),
                 entries: &[wgpu::BindGroupLayoutEntry {
                     binding: 0,
                     visibility: wgpu::ShaderStages::FRAGMENT,
                     ty: wgpu::BindingType::Buffer {
                         ty: wgpu::BufferBindingType::Uniform,
                         has_dynamic_offset: false,
-                        // min_binding_size: NonZeroU64::new(std::mem::size_of::<Uniforms>() as u64),
                         min_binding_size: None,
                     },
                     count: None,
@@ -114,27 +113,27 @@ impl FragmentShaderPipeline {
         });
 
         let uniform_buffer = device.create_buffer(&wgpu::BufferDescriptor {
-            label: Some("Uniform Buffer"),
+            label: Some("UniformBuffer"),
             size: std::mem::size_of::<Uniforms>() as u64,
             usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST,
             mapped_at_creation: false,
         });
 
         let stack_buffer = device.create_buffer(&wgpu::BufferDescriptor {
-            label: Some("Stack Buffer"),
+            label: Some("StackBuffer"),
             size: (stack_len * std::mem::size_of::<f32>()) as u64,
             usage: wgpu::BufferUsages::STORAGE | wgpu::BufferUsages::COPY_DST,
             mapped_at_creation: false,
         });
 
         let instruction_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
-            label: Some("Instruction Buffer"),
+            label: Some("InstructionBuffer"),
             contents: bytemuck::cast_slice(instructions),
             usage: wgpu::BufferUsages::STORAGE | wgpu::BufferUsages::COPY_DST,
         });
 
         let bind_group_0 = device.create_bind_group(&wgpu::BindGroupDescriptor {
-            label: Some("Bind Group 0"),
+            label: Some("BindGroup0"),
             layout: &bind_group_layout_0,
             entries: &[wgpu::BindGroupEntry {
                 binding: 0,
@@ -142,7 +141,7 @@ impl FragmentShaderPipeline {
             }],
         });
         let bind_group_1 = device.create_bind_group(&wgpu::BindGroupDescriptor {
-            label: Some("Bind group 1"),
+            label: Some("BindGroup1"),
             layout: &bind_group_layout_1,
             entries: &[
                 wgpu::BindGroupEntry {
