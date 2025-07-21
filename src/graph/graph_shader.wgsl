@@ -92,24 +92,25 @@ fn eval_function(x: f32) -> f32 {
 fn fs_main(in: VertexOut) -> @location(0) vec4f {
 	let d = u.scale * STROKE_WIDTH;
 
-	//var p = u.center + ((in.position.xy * 0.5 + 0.5) * u.resolution - u.resolution * 0.5) * u.scale;
-	var p = u.center + (in.position.xy - u.resolution * .5) * u.scale;
+	let point = u.center + (in.position.xy - u.resolution * 0.5) * u.scale;
+	var p = point + u.viewport_origin / u.resolution;
 	p.y = -p.y; // invert y axis for mathematics
 
 	let curve_y = eval_function(p.x);
 
 	// Derivative -> normal vector -> distance from curve
-	//let dx = 0.001;
-	//let curve_yd = eval_function(p.x + dx);
-	//let tangent = normalize(vec2f(dx, curve_yd - curve_y));
-	//let normal = vec2f(-tangent.y, tangent.x);
+	let dx = 0.001;
+	let curve_yd = eval_function(p.x + dx);
+	let tangent = normalize(vec2f(dx, curve_yd - curve_y));
+	let normal = vec2f(-tangent.y, tangent.x);
 
-	//let dist = abs(dot(p - vec2f(p.x, curve_y), normal));
-	let dist = abs(p.y - curve_y);
+	let dist = abs(dot(p - vec2f(p.x, curve_y), normal));
 
 	if dist < d {
 		return vec4f(1., 1., 1., 1.);
 	}
+
+	// x and y Axis
 	if abs(p.x) < d || abs(p.y) < d {
 		return vec4f(0.1, 0.1, 0.1, 1.);
 	}

@@ -226,7 +226,7 @@ impl FragmentShaderPipeline {
 pub struct Controls {
     pub zoom: f64,
     pub center: DVec2,
-    pub instructions: [Instruction; 2],
+    pub instructions: [Instruction; 3],
 }
 
 impl Controls {
