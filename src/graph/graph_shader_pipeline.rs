@@ -14,7 +14,9 @@ pub struct Uniforms {
     pub resolution: Vec2,
     pub center: Vec2,
     pub scale: f32,
-    pub _pad: f32,
+    pub _pad0: f32,
+    pub viewport_origin: Vec2,
+    pub _pad1: Vec2,
 }
 
 pub struct FragmentShaderPipeline {
