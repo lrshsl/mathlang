@@ -51,6 +51,18 @@ fn vs_main(in: VertexIn) -> VertexOut {
     return VertexOut(position);
 }
 
+fn spow(a: f32, b: f32) -> f32 {
+    if (a >= 0.0) {
+        return pow(a, b);
+    } else {
+        let abs_pow = pow(-a, b);
+
+        // If y is even, result is positive; else negative
+        let b_is_even = fract(b * 0.5) == 0.0;
+        return select(-abs_pow, abs_pow, b_is_even);
+    }
+}
+
 // Interprets a mathematical operation on the GPU
 fn eval_function(x: f32) -> f32 {
     var stack: array<f32, 16>; // simple fixed-size stack
@@ -69,7 +81,7 @@ fn eval_function(x: f32) -> f32 {
             sp = sp + 1u;
         }
         case OP_X_POLY: { // => a * (x**b)
-            stack[sp] = op.a * pow(x, op.b);
+            stack[sp] = op.a * spow(x, op.b);
             sp = sp + 1u;
         }
         case OP_ADD: { // stack[-2] += stack[-1]
@@ -82,7 +94,7 @@ fn eval_function(x: f32) -> f32 {
             let b = stack[sp - 1u];
             sp = sp - 1u;
             let a = stack[sp - 1u];
-            stack[sp - 1u] = a + b;
+            stack[sp - 1u] = a * b;
         }
         case OP_POW: { // stack[-2] **= stack[-1]
             let b = stack[sp - 1u];
