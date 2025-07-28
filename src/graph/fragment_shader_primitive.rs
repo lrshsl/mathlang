@@ -22,9 +22,6 @@ pub const INSTRUCTIONS: [Instruction; N_INST] = [
     inst!(OP_ADD),
 ];
 
-pub const STACK_SIZE: usize = 16;
-pub const INITIAL_STACK: [f32; STACK_SIZE] = [0.; STACK_SIZE];
-
 #[derive(Debug)]
 pub struct FragmentShaderPrimitive {
     controls: Controls,

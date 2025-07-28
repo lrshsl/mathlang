@@ -5,11 +5,10 @@ use iced::{
     Element,
     Length::{Fill, FillPortion},
     Rectangle, Theme,
-    widget::{self, column, container, row, text, text_editor::Action, vertical_space},
+    widget::{self, column, container, row, text, vertical_space},
 };
 
 mod parser;
-use parser::parse_func;
 
 mod graph;
 use graph::Graph;

@@ -124,9 +124,9 @@ fn fs_main(in: VertexOut) -> @location(0) vec4f {
     let tangent = normalize(vec2f(dx, curve_yd - curve_y));
     let normal = vec2f(-tangent.y, tangent.x);
 
-    let dist = abs(dot(p - vec2f(p.x, curve_y), normal));
+    let dist = dot(p - vec2f(p.x, curve_y), normal);
 
-    if dist < d {
+    if abs(dist) < d {
         return vec4f(1., 1., 1., 1.);
     }
 
