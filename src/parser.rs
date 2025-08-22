@@ -1,29 +1,52 @@
 use std::str::Chars;
 
-use crate::{
-    graph::ops::{Instruction, OP_X_POLY},
-    inst,
-};
+use crate::graph::ops::Instruction;
 
-pub struct Src<'s> {
-    text: &'s str,
-    remainder: Chars<'s>,
-    remainder_len: usize,
+#[derive(Clone)]
+pub struct Cursor<'s> {
     ctx: Context,
+    remainder: &'s str,
+    chars: Chars<'s>,
+
+    cur_char: Option<char>,
 }
 
-impl<'s> Src<'s> {
-    pub fn new(text: &'s str) -> Self {
+impl<'s> Cursor<'s> {
+    pub fn new(src: &'s str) -> Self {
         Self {
-            text,
-            remainder: text.chars(),
-            remainder_len: text.len(),
             ctx: Context::default(),
+            remainder: src,
+            chars: src.chars(),
+            cur_char: None,
+        }
+    }
+
+    pub fn as_str(&self) -> &'s str {
+        self.remainder
+    }
+}
+
+impl<'s> Iterator for Cursor<'s> {
+    type Item = char;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        self.remainder = self.chars.as_str();
+        self.cur_char = self.chars.next();
+        if let Some(ch) = self.cur_char {
+            self.ctx.col += 1;
+            if ch == '\n' {
+                self.ctx.line += 1;
+                self.ctx.col = 1;
+            }
+            Some(ch)
+        } else {
+            None
         }
     }
 }
 
-#[derive(Clone)]
+
+#[derive(Debug, Clone)]
 pub struct Context {
     pub filename: Option<String>,
     pub line: usize,
@@ -50,11 +73,12 @@ impl Default for Context {
         Self {
             filename: None,
             line: 1,
-            col: 1,
+            col: 0,
         }
     }
 }
 
+#[derive(Debug)]
 pub struct PError {
     pub msg: String,
     pub ctx: Context,
@@ -67,19 +91,38 @@ impl std::fmt::Display for PError {
     }
 }
 
-pub type PResult<'s, T> = Result<(&'s Src<'s>, T), PError>;
+pub type PResult<'s, O> = Result<(Cursor<'s>, O), PError>;
 
-fn ident<'s>(src: &'s mut Src<'s>) -> PResult<'s, &'s str> {
-    if let Some(ch) = src.remainder.next()
+macro_rules! Parser {
+    ($lt:lifetime, $out:ty) => {
+        impl Fn(Cursor<$lt>) -> PResult<$out>
+    };
+}
+
+fn whitespace<'s>(mut src: Cursor<'s>) -> PResult<'s, ()> {
+    while let Some(ch) = src.cur_char && ch.is_whitespace() {
+        src.next();
+    }
+    Ok((src, ()))
+}
+
+
+fn tok<'s, O>(f: Parser!['s, O]) -> Parser!['s, O] {
+    move |src| {
+        let (src, ()) = whitespace(src).expect("Always succeeds");
+        f(src)
+    }
+}
+
+fn ident<'s>(mut src: Cursor<'s>) -> PResult<'s, &'s str> {
+    if let Some(ch) = src.cur_char
         && ch.is_alphabetic()
     {
+        let remainder = src.as_str();
         let end = src
-            .remainder
-            .clone()
-            .position(|c| !c.is_alphanumeric() || c == '_')
-            .unwrap_or(src.remainder_len);
-        src.ctx.col += end;
-        Ok((src, &src.remainder.as_str()[..end]))
+            .position(|c| !(c.is_alphanumeric() || c == '_'))
+            .unwrap_or(src.remainder.len());
+        Ok((src, &remainder[..end]))
     } else {
         Err(PError {
             msg: "Ident has to start with an alphabetic character".to_string(),
@@ -88,10 +131,14 @@ fn ident<'s>(src: &'s mut Src<'s>) -> PResult<'s, &'s str> {
     }
 }
 
-pub fn parse_fn<'s>(src: &'s mut Src<'s>) -> PResult<'s, (&'s str, Vec<Instruction>)> {
-    let (src, fn_name) = ident(src).map_err(|mut e| {
+pub fn parse_fn<'s>(src: Cursor<'s>) -> PResult<'s, (&'s str, Vec<Instruction>)> {
+    let (src, fn_name) = tok(ident)(src).map_err(|mut e| {
         e.msg = "Expected and ident as start of a function definition".to_string();
         e
     })?;
-    Ok((src, (fn_name, vec![inst!(OP_X_POLY, -1., 2.)])))
+    Err(PError {
+        msg: format!("Ident {fn_name} ends:"),
+        ctx: src.ctx.clone(),
+    })
+    // Ok((src, (fn_name, vec![inst!(OP_X_POLY, -1., 2.)])))
 }

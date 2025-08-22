@@ -13,7 +13,7 @@ mod parser;
 mod graph;
 use graph::Graph;
 
-use crate::parser::{Src, parse_fn};
+use crate::parser::{parse_fn, Cursor};
 
 pub const ZOOM_DEFAULT: f64 = 2.0;
 pub const ZOOM_WHEEL_SCALE: f64 = 0.2;
@@ -38,6 +38,7 @@ pub enum Message {
     UpdateZoom(f64),
     ZoomDelta(DVec2, Rectangle, f64),
     SetError(String),
+    ClearErrors,
 }
 
 impl MainState {
@@ -46,11 +47,12 @@ impl MainState {
             Message::EditText(action) => {
                 self.text.perform(action);
                 let text = self.text.text();
-                let mut src = Src::new(&text);
-                match parse_fn(&mut src) {
+                let src = Cursor::new(&text);
+                match parse_fn(src) {
                     Ok((_rem, (_fn_name, prog))) => {
                         self.graph.instructions = Arc::new(prog);
                         self.graph.instructions_dirty = true;
+                        self.update(Message::ClearErrors);
                     }
                     Err(e) => self.update(Message::SetError(format!("{e}"))),
                 }
@@ -72,6 +74,7 @@ impl MainState {
                 // self.graph.controls.center += vec * (prev_scale - new_scale) * 2.0;
             }
             Message::SetError(err_msg) => self.err_msg = Some(err_msg),
+            Message::ClearErrors => self.err_msg = None,
         }
     }
 }
