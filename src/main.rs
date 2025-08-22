@@ -13,7 +13,7 @@ mod parser;
 mod graph;
 use graph::Graph;
 
-use crate::parser::parse;
+use crate::parser::{Src, parse_fn};
 
 pub const ZOOM_DEFAULT: f64 = 2.0;
 pub const ZOOM_WHEEL_SCALE: f64 = 0.2;
@@ -28,6 +28,7 @@ fn main() -> iced::Result {
 pub struct MainState {
     text: widget::text_editor::Content,
     graph: Graph,
+    err_msg: Option<String>,
 }
 
 #[derive(Debug, Clone)]
@@ -36,6 +37,7 @@ pub enum Message {
     PanningDelta(DVec2),
     UpdateZoom(f64),
     ZoomDelta(DVec2, Rectangle, f64),
+    SetError(String),
 }
 
 impl MainState {
@@ -43,10 +45,14 @@ impl MainState {
         match msg {
             Message::EditText(action) => {
                 self.text.perform(action);
-                if let Ok(prog) = parse(&self.text.text()) {
-                    self.graph.instructions =
-                        Arc::new(prog.into_iter().map(|(_, f)| f).collect::<Vec<_>>());
-                    self.graph.instructions_dirty = true;
+                let text = self.text.text();
+                let mut src = Src::new(&text);
+                match parse_fn(&mut src) {
+                    Ok((_rem, (_fn_name, prog))) => {
+                        self.graph.instructions = Arc::new(prog);
+                        self.graph.instructions_dirty = true;
+                    }
+                    Err(e) => self.update(Message::SetError(format!("{e}"))),
                 }
             }
             Message::PanningDelta(delta) => {
@@ -65,6 +71,7 @@ impl MainState {
                 // let new_scale = self.graph.controls.scale();
                 // self.graph.controls.center += vec * (prev_scale - new_scale) * 2.0;
             }
+            Message::SetError(err_msg) => self.err_msg = Some(err_msg),
         }
     }
 }
@@ -90,7 +97,7 @@ impl MainState {
             text("Editor").size(30).height(FillPortion(6)),
             container(
                 widget::text_editor(&self.text)
-                    .placeholder("Enter equation..")
+                    .placeholder("f(x) = (-x)**3 + 1")
                     .size(30)
                     .height(Fill)
                     .on_action(Message::EditText)
@@ -98,6 +105,10 @@ impl MainState {
             .width(FillPortion(30))
             .height(FillPortion(90))
             .style(container::rounded_box),
+            row![widget::text(
+                self.err_msg.clone().unwrap_or("No errors".to_string())
+            )]
+            .height(FillPortion(20)),
             row![].height(FillPortion(4)),
         ]
         .into()
