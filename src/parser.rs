@@ -45,7 +45,6 @@ impl<'s> Iterator for Cursor<'s> {
     }
 }
 
-
 #[derive(Debug, Clone)]
 pub struct Context {
     pub filename: Option<String>,
@@ -100,17 +99,38 @@ macro_rules! Parser {
 }
 
 fn whitespace<'s>(mut src: Cursor<'s>) -> PResult<'s, ()> {
-    while let Some(ch) = src.cur_char && ch.is_whitespace() {
+    while let Some(ch) = src.cur_char
+        && ch.is_whitespace()
+    {
         src.next();
     }
     Ok((src, ()))
 }
 
-
 fn tok<'s, O>(f: Parser!['s, O]) -> Parser!['s, O] {
     move |src| {
         let (src, ()) = whitespace(src).expect("Always succeeds");
         f(src)
+    }
+}
+
+fn int<'s>(mut src: Cursor<'s>) -> PResult<'s, i32> {
+    if let Some(first_ch) = src.cur_char
+        && first_ch.is_numeric()
+    {
+        let end = src
+            .position(|ch| !char::is_numeric(ch))
+            .unwrap_or(src.remainder.len());
+        let slice = &src.remainder[..end];
+        Ok((
+            src,
+            slice.parse::<i32>().expect("int not parsable as i32"),
+        ))
+    } else {
+        Err(PError {
+            msg: "Int must start with a digit [0-9]".to_string(),
+            ctx: src.ctx,
+        })
     }
 }
 
@@ -133,7 +153,7 @@ fn ident<'s>(mut src: Cursor<'s>) -> PResult<'s, &'s str> {
 
 pub fn parse_fn<'s>(src: Cursor<'s>) -> PResult<'s, (&'s str, Vec<Instruction>)> {
     let (src, fn_name) = tok(ident)(src).map_err(|mut e| {
-        e.msg = "Expected and ident as start of a function definition".to_string();
+        e.msg = format!("Expected an ident as start of a function definition: {}", e.msg);
         e
     })?;
     Err(PError {
