@@ -2,12 +2,14 @@ pub mod ast;
 pub mod cursor;
 pub mod types;
 
+use std::collections::HashMap;
+
 use ast::Expr;
 use types::{PError, PResult};
 
 use crate::{
     Parser,
-    graph::ops::{Instruction, OP_CONST, OP_X, OP_X_POLY},
+    graph::ops::{Instruction, OP_CONST, OP_MUL, OP_X, OP_X_POLY},
     inst,
     parser::cursor::Cursor,
 };
@@ -56,30 +58,33 @@ fn pmap<'s, A, B>(p: Parser!['s, A], f: impl FnOnce(A) -> B) -> Parser!['s, B] {
     }
 }
 
-fn int<'s>(src: Cursor<'s>) -> PResult<'s, i32> {
+fn nr<'s>(src: Cursor<'s>) -> PResult<'s, f32> {
     let Some(ch) = src.cur_char else {
         return Err(PError {
-            msg: "[int] Unexpected EOF, expecting digit [0-9]".to_string(),
+            msg: "[nr] Unexpected EOF, expecting digit [0-9]".to_string(),
             ctx: src.ctx,
         });
     };
     if !ch.is_numeric() {
         return Err(PError {
-            msg: "[int] Int must start with a digit [0-9]".to_string(),
+            msg: "[nr] Number must start with a digit [0-9]".to_string(),
             ctx: src.ctx,
         });
     }
 
-    let slice = src.clone().take_while(|&ch| char::is_numeric(ch));
-    let slice = [ch].into_iter().chain(slice);
+    let slice = src
+        .clone()
+        .take_while(|&ch| char::is_numeric(ch) || ch == '.');
+    let combined = [ch].into_iter().chain(slice).collect::<String>();
 
-    Ok((
-        src,
-        slice
-            .collect::<String>()
-            .parse::<i32>()
-            .expect(&format!("int not parsable as i32: ")),
-    ))
+    let Ok(nr) = combined.parse::<f32>() else {
+        return Err(PError {
+            msg: format!("[nr] Could not parse number: {}", combined),
+            ctx: src.ctx,
+        });
+    };
+
+    Ok((src, nr))
 }
 
 fn ident<'s>(mut src: Cursor<'s>) -> PResult<'s, &'s str> {
@@ -106,8 +111,13 @@ fn ident<'s>(mut src: Cursor<'s>) -> PResult<'s, &'s str> {
 
 fn expr<'s>() -> Parser!['s, Expr] {
     move |src| {
-        if let Ok((src, v)) = tok(int)(src.clone()) {
-            return Ok((src, Expr::Nr(v as f32)));
+        if let Ok((src, _)) = tok(chr('-'))(src.clone()) {
+            let (src, inner) = expr()(src)?;
+            return Ok((src, Expr::Minus(Box::new(inner))));
+        }
+
+        if let Ok((src, v)) = tok(nr)(src.clone()) {
+            return Ok((src, Expr::Nr(v)));
         }
 
         if let Ok((src, v)) = tok(ident)(src.clone()) {
@@ -146,17 +156,5 @@ pub fn parse_fn<'s>(src: Cursor<'s>) -> PResult<'s, (&'s str, Vec<Instruction>)>
     let (src, _) = parse!(tok(chr('=')), "[Fn] Expected '=' after ident", src)?;
     let (src, expr) = parse!(expr(), "[Fn] Expected expression", src)?;
 
-    let inst1 = match expr {
-        Expr::Nr(n) => inst!(OP_CONST, n),
-        Expr::Ref(var) if var == param => {
-            inst!(OP_X)
-        }
-        Expr::Ref(var) => {
-            return Err(PError {
-                msg: format!("Var {var} not found"),
-                ctx: src.ctx,
-            });
-        }
-    };
-    Ok((src, (fn_name, vec![inst1])))
+    Ok((src, (fn_name, expr.compile())))
 }
