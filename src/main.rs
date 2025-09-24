@@ -13,7 +13,7 @@ mod parser;
 mod graph;
 use graph::Graph;
 
-use crate::parser::{parse_fn, Cursor};
+use crate::parser::{cursor::Cursor, parse_fn};
 
 pub const ZOOM_DEFAULT: f64 = 2.0;
 pub const ZOOM_WHEEL_SCALE: f64 = 0.2;
