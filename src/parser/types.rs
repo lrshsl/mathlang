@@ -50,6 +50,6 @@ pub type PResult<'s, O> = Result<(Cursor<'s>, O), PError>;
 #[macro_export]
 macro_rules! Parser {
     ($lt:lifetime, $out:ty) => {
-        impl FnOnce(crate::parser::cursor::Cursor<$lt>) -> PResult<$out>
+        impl Fn(crate::parser::cursor::Cursor<$lt>) -> PResult<$out>
     };
 }

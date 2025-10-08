@@ -5,6 +5,7 @@ use crate::parser::types::Context;
 #[derive(Clone)]
 pub struct Cursor<'s> {
     pub ctx: Context,
+    pub src: &'s str,
     pub remainder: &'s str,
     pub chars: Chars<'s>,
 
@@ -15,14 +16,11 @@ impl<'s> Cursor<'s> {
     pub fn new(src: &'s str) -> Self {
         Self {
             ctx: Context::default(),
+            src: src,
             remainder: src,
             chars: src.chars(),
             cur_char: src.chars().next(),
         }
-    }
-
-    pub fn as_str(&self) -> &'s str {
-        self.remainder
     }
 }
 
@@ -30,7 +28,6 @@ impl<'s> Iterator for Cursor<'s> {
     type Item = char;
 
     fn next(&mut self) -> Option<Self::Item> {
-        self.remainder = self.chars.as_str();
         self.cur_char = self.chars.next();
         if let Some(ch) = self.cur_char {
             self.ctx.col += 1;
@@ -38,6 +35,7 @@ impl<'s> Iterator for Cursor<'s> {
                 self.ctx.line += 1;
                 self.ctx.col = 1;
             }
+            self.remainder = &self.remainder[1..];
             Some(ch)
         } else {
             None

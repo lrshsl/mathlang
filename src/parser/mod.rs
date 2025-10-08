@@ -2,20 +2,13 @@ pub mod ast;
 pub mod cursor;
 pub mod types;
 
-use std::collections::HashMap;
-
 use ast::Expr;
 use types::{PError, PResult};
 
-use crate::{
-    Parser,
-    graph::ops::{Instruction, OP_CONST, OP_MUL, OP_X, OP_X_POLY},
-    inst,
-    parser::cursor::Cursor,
-};
+use crate::{Parser, graph::ops::Instruction, parser::cursor::Cursor};
 
-fn okparser<'s, T>(v: T) -> Parser!['s, T] {
-    move |src| Ok((src, v))
+fn okparser<'s, T: Clone>(v: T) -> Parser!['s, T] {
+    move |src| Ok((src, v.clone()))
 }
 
 fn chr<'s>(expected: char) -> Parser!['s, char] {
@@ -51,7 +44,7 @@ fn tok<'s, O>(f: Parser!['s, O]) -> Parser!['s, O] {
     }
 }
 
-fn pmap<'s, A, B>(p: Parser!['s, A], f: impl FnOnce(A) -> B) -> Parser!['s, B] {
+fn pmap<'s, A, B: Clone>(p: Parser!['s, A], f: impl Fn(A) -> B) -> Parser!['s, B] {
     move |src| {
         let (src, a) = p(src)?;
         okparser(f(a))(src)
@@ -87,6 +80,39 @@ fn nr<'s>(src: Cursor<'s>) -> PResult<'s, f32> {
     Ok((src, nr))
 }
 
+fn satisfy<'s>(precond: impl Fn(char) -> bool) -> Parser!['s, char] {
+    move |src| {
+        if let Some(ch) = src.cur_char
+            && precond(ch)
+        {
+            Ok((src, ch))
+        } else {
+            Err(PError {
+                msg: "Precond failed".to_string(),
+                ctx: src.ctx,
+            })
+        }
+    }
+}
+
+fn many1<'s, T>(p: Parser!['s, T]) -> Parser!['s, Vec<T>] {
+    move |src| {
+        let mut s = src;
+        let Ok((new_s, v1)) = p(s.clone()) else {
+            return Err(PError {
+                msg: format!("Unexpected EOF, expecting at least one"),
+                ctx: s.ctx,
+            });
+        };
+        let mut res = Vec::from([v1]);
+        while let Ok((new_s, v)) = p(new_s.clone()) {
+            s = new_s;
+            res.push(v)
+        }
+        Ok((s, res))
+    }
+}
+
 fn ident<'s>(mut src: Cursor<'s>) -> PResult<'s, &'s str> {
     let Some(ch) = src.cur_char else {
         return Err(PError {
@@ -101,10 +127,10 @@ fn ident<'s>(mut src: Cursor<'s>) -> PResult<'s, &'s str> {
         });
     }
 
-    let remainder = src.as_str();
+    let remainder = src.remainder;
     let end = src
         .position(|c| !(c.is_alphanumeric() || c == '_'))
-        .unwrap_or(src.remainder.len());
+        .unwrap_or(remainder.len());
 
     Ok((src, &remainder[..end]))
 }
@@ -142,7 +168,7 @@ macro_rules! parse {
 
 pub fn parse_fn<'s>(src: Cursor<'s>) -> PResult<'s, (&'s str, Vec<Instruction>)> {
     let (src, fn_name) = parse!(
-        ident,
+        tok(ident),
         "[Fn] Expected an ident as start of a function definition",
         src
     )?;
@@ -155,6 +181,8 @@ pub fn parse_fn<'s>(src: Cursor<'s>) -> PResult<'s, (&'s str, Vec<Instruction>)>
     let (src, _) = parse!(tok(chr(')')), "[Fn] Expected ')'", src)?;
     let (src, _) = parse!(tok(chr('=')), "[Fn] Expected '=' after ident", src)?;
     let (src, expr) = parse!(expr(), "[Fn] Expected expression", src)?;
+
+    println!("{fn_name}({param})");
 
     Ok((src, (fn_name, expr.compile())))
 }

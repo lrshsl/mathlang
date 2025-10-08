@@ -13,14 +13,13 @@ impl<'s> Expr<'s> {
     pub fn compile(&self) -> Vec<Instruction> {
         match self {
             Self::Minus(val) => {
-                let mut v = Vec::new();
+                let mut v = val.compile();
                 v.push(inst!(OP_MUL, -1.0));
-                v.extend(val.compile());
                 v
             }
             Self::Nr(n) => vec![inst!(OP_CONST, *n)],
             Self::Ref("x") => vec![inst!(OP_X)],
-            Self::Ref(r) => panic!("Undefined reference {r}"),
+            Self::Ref(r) => panic!("Undefined reference: {r}"),
         }
     }
 }
