@@ -1,10 +1,10 @@
 use std::str::Chars;
 
-use crate::parser::types::Context;
+use crate::parser::types::FileContext;
 
 #[derive(Clone)]
 pub struct Cursor<'s> {
-    pub ctx: Context,
+    pub ctx: FileContext,
     pub src: &'s str,
     pub remainder: &'s str,
     pub chars: Chars<'s>,
@@ -15,7 +15,7 @@ pub struct Cursor<'s> {
 impl<'s> Cursor<'s> {
     pub fn new(src: &'s str) -> Self {
         Self {
-            ctx: Context::default(),
+            ctx: FileContext::default(),
             src: src,
             remainder: src,
             chars: src.chars(),

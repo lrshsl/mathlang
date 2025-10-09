@@ -2,6 +2,8 @@ pub mod ast;
 pub mod cursor;
 pub mod types;
 
+use std::collections::HashMap;
+
 use ast::Expr;
 use types::{PError, PResult};
 
@@ -184,5 +186,11 @@ pub fn parse_fn<'s>(src: Cursor<'s>) -> PResult<'s, (&'s str, Vec<Instruction>)>
 
     println!("{fn_name}({param})");
 
-    Ok((src, (fn_name, expr.compile())))
+    Ok((src, (fn_name, expr)))
+}
+
+pub fn parse_program<'s>(s: &'s str) -> PResult<'s, Vec<Instruction>> {
+    let src = Cursor::new(s);
+    let ctx = HashMap::new();
+    many1(parse!(expr(), "[Program] Expected expression", src))
 }

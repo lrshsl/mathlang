@@ -1,15 +1,24 @@
+use std::collections::HashMap;
+
 use crate::parser::cursor::Cursor;
+
+type Params = Vec<String>;
 
 #[derive(Debug, Clone)]
 pub struct Context {
+    functions: HashMap<String, Vec<Params>>,
+}
+
+#[derive(Debug, Clone)]
+pub struct FileContext {
     pub filename: Option<String>,
     pub line: usize,
     pub col: usize,
 }
 
-impl std::fmt::Display for Context {
+impl std::fmt::Display for FileContext {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        let Context {
+        let FileContext {
             filename,
             line,
             col,
@@ -22,7 +31,7 @@ impl std::fmt::Display for Context {
     }
 }
 
-impl Default for Context {
+impl Default for FileContext {
     fn default() -> Self {
         Self {
             filename: None,
@@ -35,7 +44,7 @@ impl Default for Context {
 #[derive(Debug)]
 pub struct PError {
     pub msg: String,
-    pub ctx: Context,
+    pub ctx: FileContext,
 }
 
 impl std::fmt::Display for PError {
