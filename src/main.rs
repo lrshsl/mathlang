@@ -13,7 +13,7 @@ mod parser;
 mod graph;
 use graph::Graph;
 
-use crate::parser::{cursor::Cursor, parse_fn};
+use crate::parser::{cursor::Cursor, parse_program};
 
 pub const ZOOM_DEFAULT: f64 = 2.0;
 pub const ZOOM_WHEEL_SCALE: f64 = 0.2;
@@ -47,9 +47,8 @@ impl MainState {
             Message::EditText(action) => {
                 self.text.perform(action);
                 let text = self.text.text();
-                let src = Cursor::new(&text);
-                match parse_fn(src) {
-                    Ok((_rem, (_fn_name, prog))) => {
+                match parse_program(&text) {
+                    Ok((_rem, prog)) => {
                         self.graph.instructions = Arc::new(prog);
                         self.graph.instructions_dirty = true;
                         self.update(Message::ClearErrors);

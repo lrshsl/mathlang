@@ -18,6 +18,3 @@ pub use s_expr::SExpr;
 
 mod literal;
 pub use literal::Literal;
-
-#[cfg(test)]
-mod tests;

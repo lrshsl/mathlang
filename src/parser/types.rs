@@ -36,7 +36,7 @@ impl Default for FileContext {
         Self {
             filename: None,
             line: 1,
-            col: 0,
+            col: 1,
         }
     }
 }
@@ -56,9 +56,11 @@ impl std::fmt::Display for PError {
 
 pub type PResult<'s, O> = Result<(Cursor<'s>, O), PError>;
 
+pub type BoxedParser<'s, T> = Box<dyn Fn(crate::parser::cursor::Cursor<'s>) -> PResult<'s, T> + 's>;
+
 #[macro_export]
 macro_rules! Parser {
     ($lt:lifetime, $out:ty) => {
-        impl Fn(crate::parser::cursor::Cursor<$lt>) -> PResult<$out>
+        impl Fn(crate::parser::cursor::Cursor<$lt>) -> crate::parser::types::PResult<'_, $out>
     };
 }
