@@ -7,30 +7,25 @@ pub fn parse_literal(src: Cursor) -> PResult<Literal> {
         string, x => Literal::Str(x);
         boolean, x => Literal::Bool(x);
     }
-    .or_else(|e| {
-        if let Ok((int_remainder, int)) = int(src.clone()) {
+    .or_else(|_| {
+        int(src.clone()).and_then(|(int_remainder, int)| {
             //
             // Check if looks like float
             let next_char = int_remainder.remainder.chars().next();
             if next_char == Some('.') || next_char == Some('e') {
-                let (float_remainder, float) = match float(src.clone()) {
-                    Ok(v) => v,
-                    Err(e) => {
-                        return Err(PError {
-                            msg: format!(
-                                "[parse_literal] Could not parse float: {}\n{}",
-                                src.remainder, e.msg
-                            ),
-                            ctx: src.ctx,
-                        });
-                    }
-                };
-                return Ok((float_remainder, Literal::Float(float)));
+                float(src.clone())
+                    .map(|(src, x)| (src, Literal::Float(x)))
+                    .map_err(|mut e| {
+                        e.msg = format!(
+                            "[parse_literal] Could not parse float: {}\n{}",
+                            src.remainder, e.msg
+                        );
+                        e
+                    })
+            } else {
+                Ok((int_remainder, Literal::Int(int)))
             }
-
-            return Ok((int_remainder, Literal::Int(int)));
-        }
-        Err(e)
+        })
     })
 }
 
