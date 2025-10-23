@@ -3,7 +3,9 @@ use crate::{choice, parse};
 use super::*;
 
 pub fn parse_literal(src: Cursor) -> PResult<Literal> {
-    if let Ok((int_remainder, int)) = int(src.clone()) {
+    if let Ok((str_remainder, string)) = string(src.clone()) {
+        Ok((str_remainder, Literal::Str(string)))
+    } else if let Ok((int_remainder, int)) = int(src.clone()) {
         //
         // Check if looks like float
         let next_char = int_remainder.remainder.chars().next();
@@ -36,6 +38,13 @@ pub fn parse_literal(src: Cursor) -> PResult<Literal> {
             ctx: src.ctx,
         })
     }
+}
+
+fn string(src: Cursor) -> PResult<String> {
+    let (src, _) = parse!(chr('"'), "Expected opening quote", src)?;
+    let (src, content) = parse!(some(satisfy(|ch| ch != '"')), "Expected string", src)?;
+    let (src, _) = parse!(chr('"'), "Expected closing quote", src)?;
+    Ok((src, String::from_iter(content.into_iter())))
 }
 
 fn int(src: Cursor) -> PResult<i32> {
