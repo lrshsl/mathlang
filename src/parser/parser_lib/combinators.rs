@@ -3,6 +3,14 @@ use crate::{
     parser::types::{BoxedParser, PError},
 };
 
+pub fn terminated<'s, T, D>(p1: Parser!['s, T], p2: Parser!['s, D]) -> Parser!['s, T] {
+    move |src| {
+        let (src, v) = p1(src.clone())?;
+        let (src, _) = p2(src.clone())?;
+        Ok((src, v))
+    }
+}
+
 pub fn choice_f<'s, T>(parsers: Vec<BoxedParser<'s, T>>) -> Parser!['s, T] {
     move |src| {
         let mut last_err = None;

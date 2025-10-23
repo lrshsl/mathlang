@@ -1,0 +1,16 @@
+| Comment
+
+| Variables (all immutable)
+
+a -> 5;
+b -> 3;
+
+| Function declaration
+add :: Int -> Int -> Int
+
+| Function implementation
+add x y -> ( x + y );
+
+| Function call
+add a b;
+add (add a b) 1;

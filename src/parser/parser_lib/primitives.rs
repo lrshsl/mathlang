@@ -48,6 +48,25 @@ pub fn chr<'s>(expected: char) -> Parser!['s, char] {
     }
 }
 
+pub fn keyword<'s>(expected: &'s str) -> Parser!['_, ()] {
+    move |src| {
+        let mut src = src;
+        for ch in expected.chars() {
+            let Ok((new_src, _)) = chr(ch)(src.clone()) else {
+                return Err(PError {
+                    msg: format!(
+                        "[keyword] Expected '{expected}', found '{}'",
+                        src.cur_char.map(String::from).unwrap_or("EOF".into())
+                    ),
+                    ctx: src.ctx,
+                });
+            };
+            src = new_src
+        }
+        Ok((src, ()))
+    }
+}
+
 pub fn pmap<'s, A, B: Clone>(p: Parser!['s, A], f: impl Fn(A) -> B) -> Parser!['s, B] {
     move |src| {
         let (src, a) = p(src)?;
