@@ -3,40 +3,35 @@ use crate::{choice, parse};
 use super::*;
 
 pub fn parse_literal(src: Cursor) -> PResult<Literal> {
-    if let Ok((str_remainder, string)) = string(src.clone()) {
-        Ok((str_remainder, Literal::Str(string)))
-    } else if let Ok((int_remainder, int)) = int(src.clone()) {
-        //
-        // Check if looks like float
-        let next_char = int_remainder.remainder.chars().next();
-        if next_char == Some('.') || next_char == Some('e') {
-            let (float_remainder, float) = match float(src.clone()) {
-                Ok(v) => v,
-                Err(e) => {
-                    return Err(PError {
-                        msg: format!(
-                            "[parse_literal] Could not parse float: {}\n{}",
-                            src.remainder, e.msg
-                        ),
-                        ctx: src.ctx,
-                    });
-                }
-            };
-            return Ok((float_remainder, Literal::Float(float)));
-        }
-
-        Ok((int_remainder, Literal::Int(int)))
-    } else if let Ok((src, bool)) = boolean(src.clone()) {
-        Ok((src, Literal::Bool(bool)))
-    } else {
-        Err(PError {
-            msg: format!(
-                "[parse_literal] Could not parse literal: {}",
-                &src.remainder
-            ),
-            ctx: src.ctx,
-        })
+    pmatch! {src; err = "[parse_literal]";
+        string, x => Literal::Str(x);
+        boolean, x => Literal::Bool(x);
     }
+    .or_else(|e| {
+        if let Ok((int_remainder, int)) = int(src.clone()) {
+            //
+            // Check if looks like float
+            let next_char = int_remainder.remainder.chars().next();
+            if next_char == Some('.') || next_char == Some('e') {
+                let (float_remainder, float) = match float(src.clone()) {
+                    Ok(v) => v,
+                    Err(e) => {
+                        return Err(PError {
+                            msg: format!(
+                                "[parse_literal] Could not parse float: {}\n{}",
+                                src.remainder, e.msg
+                            ),
+                            ctx: src.ctx,
+                        });
+                    }
+                };
+                return Ok((float_remainder, Literal::Float(float)));
+            }
+
+            return Ok((int_remainder, Literal::Int(int)));
+        }
+        Err(e)
+    })
 }
 
 fn string(src: Cursor) -> PResult<String> {

@@ -23,7 +23,7 @@ macro_rules! pmatch {
     // single parser with default action (x => x)
     (
         $src:expr; err = $err:expr;
-        $p:expr
+        $p:expr $(;)?
 
     ) => {
         pmatch!($src; err = $err; $p, x => x)
@@ -33,7 +33,7 @@ macro_rules! pmatch {
     // single parser + action
     (
         $src:expr; err = $err:expr;
-        $p:expr, $pattern:pat => $action:expr
+        $p:expr, $pattern:pat => $action:expr $(;)?
 
     ) => {
         match $p($src.clone()) {

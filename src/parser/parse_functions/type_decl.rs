@@ -19,13 +19,9 @@ pub fn parse_type_decl(src: Cursor) -> PResult<TypeDecl> {
 }
 
 pub fn parse_type(src: Cursor) -> PResult<Type> {
-    if let Ok((src, _)) = parse!(tok(keyword("int")), "int", src.clone()) {
-        Ok((src, Type::Int))
-    } else if let Ok((src, _)) = parse!(tok(keyword("string")), "string", src.clone()) {
-        Ok((src, Type::String))
-    } else if let Ok((src, _)) = parse!(tok(keyword("bool")), "bool", src.clone()) {
-        Ok((src, Type::Bool))
-    } else {
-        todo!()
+    pmatch! {src; err = "[parse_type]";
+        tok(keyword("int")), _ => Type::Int;
+        tok(keyword("string")), _ => Type::String;
+        tok(keyword("bool")), _ => Type::Bool;
     }
 }
