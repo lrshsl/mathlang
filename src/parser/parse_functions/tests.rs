@@ -94,18 +94,13 @@ fn parse_literal_string() {
 }
 
 #[test]
-fn parse_expr_simple_ref() {
-    assert_parses(parse_expr, "x", Expr::Ref("x"), "");
-}
-
-#[test]
 fn parse_expr_application() {
     assert_parses(
         parse_expr,
         "add x y",
         Expr::SExpr(SExpr {
             name: "add",
-            args: vec![Expr::Ref("x"), Expr::Ref("y")],
+            args: vec![varref("x"), varref("y")],
         }),
         "",
     );

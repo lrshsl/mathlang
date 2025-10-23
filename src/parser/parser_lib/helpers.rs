@@ -17,6 +17,56 @@ macro_rules! parse {
     };
 }
 
+/// Basically choice![] with pattern matching
+#[macro_export]
+macro_rules! pmatch {
+    // single parser with default action (x => x)
+    (
+        $src:expr; err = $err:expr;
+        $p:expr
+
+    ) => {
+        pmatch!($src; err = $err; $p, x => x)
+    };
+
+
+    // single parser + action
+    (
+        $src:expr; err = $err:expr;
+        $p:expr, $pattern:pat => $action:expr
+
+    ) => {
+        match $p($src.clone()) {
+            Ok((src, $pattern)) => Ok((src, $action)),
+            Err(mut e) => {
+                e.msg = $err.to_string();
+                Err(e)
+            }
+        }
+    };
+
+
+    // multiple parser arms (fallthrough)
+    (
+
+        $src:expr; err = $err:expr;
+        $p1:expr, $pat1:pat => $act1:expr;
+
+        $( $p:expr, $($pat:pat => $act:expr)? );+
+        $(;)?
+
+    ) => {{
+        let res = pmatch!($src; err = $err; $p1, $pat1 => $act1); // First parser does not need the error
+        $(
+            let res = match res {
+                Ok(v) => Ok(v),
+                Err(_) => pmatch!($src; err = $err; $p, $( $pat => $act )?),
+            };
+        )+
+        res
+    }};
+}
+
 pub fn whitespace<'s>(mut src: Cursor<'s>) -> PResult<'s, ()> {
     while let Some(ch) = src.cur_char
         && ch.is_whitespace()

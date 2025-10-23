@@ -1,4 +1,5 @@
-pub use crate::parse;
+pub use crate::{choice, parse, pmatch};
+
 pub(self) use crate::parser::{
     ast::*,
     cursor::Cursor,
@@ -13,7 +14,7 @@ mod top_level;
 pub use top_level::parse_top_level;
 
 mod expr;
-pub use expr::parse_expr;
+pub use expr::{parse_expr, parse_primary};
 
 mod type_decl;
 pub use type_decl::parse_type_decl;

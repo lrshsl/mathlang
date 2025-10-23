@@ -5,7 +5,7 @@ mod top_level;
 pub use top_level::TopLevel;
 
 mod expr;
-pub use expr::Expr;
+pub use expr::{Expr, s_expr, varref};
 
 mod type_decl;
 pub use type_decl::{Type, TypeDecl};
