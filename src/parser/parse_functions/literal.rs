@@ -9,7 +9,6 @@ pub fn parse_literal(src: Cursor) -> PResult<Literal> {
         //
         // Check if looks like float
         let next_char = int_remainder.remainder.chars().next();
-        println!("next_char: {next_char:?}");
         if next_char == Some('.') || next_char == Some('e') {
             let (float_remainder, float) = match float(src.clone()) {
                 Ok(v) => v,
