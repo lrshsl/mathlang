@@ -5,3 +5,7 @@ pub enum Literal {
     Str(String),
     Bool(bool),
 }
+
+pub fn int(x: i32) -> super::Expr<'static> {
+    super::Expr::Literal(Literal::Int(x))
+}

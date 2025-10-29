@@ -1,4 +1,4 @@
-pub use crate::{choice, parse, pmatch};
+pub use crate::{parse, pmatch};
 
 pub(self) use crate::parser::{
     ast::*,

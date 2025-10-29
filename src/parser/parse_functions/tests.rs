@@ -98,10 +98,7 @@ fn parse_expr_application() {
     assert_parses(
         parse_expr,
         "add x y",
-        Expr::SExpr(SExpr {
-            name: "add",
-            args: vec![varref("x"), varref("y")],
-        }),
+        s_expr("add", vec![varref("x"), varref("y")]),
         "",
     );
 }

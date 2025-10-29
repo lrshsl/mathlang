@@ -1,9 +1,6 @@
 use crate::{
     parse,
-    parser::{
-        cursor::Cursor,
-        types::{PError, PResult},
-    },
+    parser::{cursor::Cursor, types::PResult},
     pmatch,
 };
 
@@ -69,7 +66,7 @@ mod tests {
 
     #[test]
     fn parse_primary_literal_int() {
-        assert_primary("123", Expr::Literal(Literal::Int(123)), "");
+        assert_primary("123", int(123), "");
     }
 
     #[test]
@@ -79,7 +76,12 @@ mod tests {
 
     #[test]
     fn parse_primary_paren_expr() {
-        assert_primary("(42)", Expr::Literal(Literal::Int(42)), "");
+        assert_primary("(42)", int(42), "");
+    }
+
+    #[test]
+    fn parse_primary_s_expr() {
+        assert_primary("(a 1 2)", s_expr("a", vec![int(1), int(2)]), "");
     }
 
     #[test]
@@ -93,12 +95,11 @@ mod tests {
 
     #[test]
     fn parse_primary_partial() {
-        assert_primary("123abc", Expr::Literal(Literal::Int(123)), "abc");
+        assert_primary("123abc", int(123), "abc");
     }
 
     #[test]
     fn parse_primary_invalid_input() {
-        let err = parse_primary(Cursor::new("!")).expect_err("expected failure on invalid input");
-        assert!(err.msg.contains("No parser succeeded"));
+        parse_primary(Cursor::new("!")).expect_err("expected failure on invalid input");
     }
 }

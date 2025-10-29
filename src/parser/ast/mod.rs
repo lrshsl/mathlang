@@ -17,4 +17,4 @@ mod s_expr;
 pub use s_expr::SExpr;
 
 mod literal;
-pub use literal::Literal;
+pub use literal::{Literal, int};
