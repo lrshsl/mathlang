@@ -23,12 +23,12 @@ use super::*;
 //                 TopLevel::MapImpl(Mapping {
 //                     name: "a",
 //                     params: vec![],
-//                     body: Expr::Literal(Literal::Int(1)),
+//                     body: int(1),
 //                 }),
 //                 TopLevel::MapImpl(Mapping {
 //                     name: "b",
 //                     params: vec![],
-//                     body: Expr::Literal(Literal::Int(2)),
+//                     body: int(2),
 //                 }),
 //                 TopLevel::TypeDecl(TypeDecl {
 //                     name: "add",
@@ -53,7 +53,7 @@ use super::*;
 //                             name: "add",
 //                             args: vec![Expr::Ref("a"), Expr::Ref("b")],
 //                         }),
-//                         Expr::Literal(Literal::Int(1)),
+//                         int(1),
 //                     ],
 //                 })),
 //             ])
@@ -69,7 +69,7 @@ fn assert_parses<'s, T: std::fmt::Debug + PartialEq>(
     expected_rem: &'s str,
 ) {
     let (next, val) = parser(Cursor::new(input)).expect("parse failed");
-    assert_eq!(val, expected_val);
+    assert_eq!(val, expected_val, "remainder: {}", next.remainder);
     assert_eq!(next.remainder, expected_rem);
 }
 
@@ -111,28 +111,25 @@ fn parse_mapping_no_params() {
         Mapping {
             name: "a",
             params: vec![],
-            body: Expr::Literal(Literal::Int(1)),
+            body: int(1),
         },
         "",
     );
 }
 
-// #[test]
-// fn parse_mapping_with_params() {
-//     assert_parses(
-//         parse_mapping,
-//         "add x y -> (x + y)",
-//         Mapping {
-//             name: "add",
-//             params: vec![Param("x".into()), Param("y".into())],
-//             body: Expr::SExpr(SExpr {
-//                 name: "__builtin__add",
-//                 args: vec![Expr::Ref("x"), Expr::Ref("y")],
-//             }),
-//         },
-//         "",
-//     );
-// }
+#[test]
+fn parse_mapping_with_params() {
+    assert_parses(
+        parse_mapping,
+        "add x y -> (x + y)",
+        Mapping {
+            name: "add",
+            params: vec![Param("x".into()), Param("y".into())],
+            body: s_expr("__builtin__add", vec![varref("x"), varref("y")]),
+        },
+        "",
+    );
+}
 
 #[test]
 fn parse_type_decl_simple() {
@@ -190,12 +187,12 @@ fn parse_module_simple() {
                 TopLevel::MapImpl(Mapping {
                     name: "a",
                     params: vec![],
-                    body: Expr::Literal(Literal::Int(1)),
+                    body: int(1),
                 }),
                 TopLevel::MapImpl(Mapping {
                     name: "b",
                     params: vec![],
-                    body: Expr::Literal(Literal::Int(2)),
+                    body: int(2),
                 }),
             ],
         }

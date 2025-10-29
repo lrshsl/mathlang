@@ -28,10 +28,8 @@ fn parse_expr_list<'s>(mut src: Cursor<'s>) -> PResult<'s, Vec<Expr<'s>>> {
 }
 
 /// expr
-///     : literal
-///     | IDENT
-///     | '(' exprList ')'
-///     | expr expr
+///     : s_expr
+///     | primary
 ///     | expr op=Operator expr
 ///     ;
 ///
@@ -45,11 +43,15 @@ pub fn parse_expr(src: Cursor) -> PResult<Expr> {
     }
 }
 
+/// primary
+///     : Literal
+///     | IDENT
+///     | '(' expr ')'
 pub fn parse_primary(src: Cursor) -> PResult<Expr> {
     pmatch! {src; err = "[parse_primary] Could not match any subparser";
         parse_literal, x => Expr::Literal(x);
-        ident, x => varref(x);
-        between(parse_expr, chr('('), chr(')')), x => x;
+        tok(ident), x => varref(x);
+        between(tok(parse_expr), tok(chr('(')), tok(chr(')'))), x => x;
     }
 }
 
@@ -60,7 +62,7 @@ mod tests {
     /// Helper for convenience
     fn assert_primary(input: &str, expected: Expr, expected_rem: &str) {
         let (next, expr) = parse_primary(Cursor::new(input)).expect("parse_primary failed");
-        assert_eq!(expr, expected);
+        assert_eq!(expr, expected, "remainder: {}", next.remainder);
         assert_eq!(next.remainder, expected_rem);
     }
 

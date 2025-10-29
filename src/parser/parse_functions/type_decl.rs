@@ -1,16 +1,5 @@
 use super::*;
 
-// pub struct TypeDecl<'s> {
-//     pub name: &'s str,
-//     pub params: Vec<Type>,
-// }
-
-// pub enum Type {
-//     Int,
-//     String,
-//     Bool,
-// }
-
 pub fn parse_type_decl(src: Cursor) -> PResult<TypeDecl> {
     let (src, name) = parse!(tok(ident), "Could not parse type name", src)?;
     let (src, _) = parse!(tok(keyword("::")), "Could not find '::'", src)?;

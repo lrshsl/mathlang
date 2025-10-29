@@ -4,16 +4,16 @@ use super::*;
 
 pub fn parse_literal(src: Cursor) -> PResult<Literal> {
     pmatch! {src; err = "[parse_literal]";
-        string, x => Literal::Str(x);
-        boolean, x => Literal::Bool(x);
+        tok(string), x => Literal::Str(x);
+        tok(boolean), x => Literal::Bool(x);
     }
     .or_else(|_| {
-        int(src.clone()).and_then(|(int_remainder, int)| {
+        tok(int)(src.clone()).and_then(|(int_remainder, int)| {
             //
             // Check if looks like float
             let next_char = int_remainder.remainder.chars().next();
             if next_char == Some('.') || next_char == Some('e') {
-                float(src.clone())
+                tok(float)(src.clone())
                     .map(|(src, x)| (src, Literal::Float(x)))
                     .map_err(|mut e| {
                         e.msg = format!(
@@ -37,7 +37,7 @@ fn string(src: Cursor) -> PResult<String> {
 }
 
 fn int(src: Cursor) -> PResult<i32> {
-    let (src, int) = parse!(tok(some(digit(10))), "Could not parse int", src)?;
+    let (src, int) = parse!(some(digit(10)), "Could not parse int", src)?;
     Ok((
         src,
         String::from_iter(int.into_iter())
