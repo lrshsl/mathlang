@@ -2,7 +2,7 @@ use parser_lib::choice;
 
 use super::*;
 
-pub fn parse_literal(src: Cursor) -> PResult<Literal> {
+pub fn literal(src: Cursor) -> PResult<Literal> {
     pmatch! {src; err = "[parse_literal]";
         tok(string), x => Literal::Str(x);
         tok(boolean), x => Literal::Bool(x);
@@ -107,27 +107,27 @@ mod tests {
     #[test]
     fn invalid_literal() {
         let src = Cursor::new("not_a_literal");
-        assert!(parse_literal(src).is_err());
+        assert!(literal(src).is_err());
 
         let src = Cursor::new("1.0.0");
-        let (src, v) = parse_literal(src.clone()).unwrap();
+        let (src, v) = literal(src.clone()).unwrap();
         assert_eq!(v, Literal::Float(1.0));
         assert_eq!(src.remainder, ".0");
         // assert!(parse_literal(src).is_err());
 
         let src = Cursor::new("truefalse");
-        assert!(parse_literal(src).is_err());
+        assert!(literal(src).is_err());
     }
 
     #[test]
     fn literal_bool() {
         let src = Cursor::new("true");
-        let (src, v) = parse_literal(src).unwrap();
+        let (src, v) = literal(src).unwrap();
         assert_eq!(v, Literal::Bool(true));
         assert_eq!(src.remainder, "");
 
         let src = Cursor::new("false");
-        let (src, v) = parse_literal(src).unwrap();
+        let (src, v) = literal(src).unwrap();
         assert_eq!(v, Literal::Bool(false));
         assert_eq!(src.remainder, "");
     }
@@ -135,7 +135,7 @@ mod tests {
     #[test]
     fn literal_int() {
         let src = Cursor::new("123");
-        let (src, v) = parse_literal(src).unwrap();
+        let (src, v) = literal(src).unwrap();
         assert_eq!(v, Literal::Int(123));
         assert_eq!(src.remainder, "");
     }
@@ -143,7 +143,7 @@ mod tests {
     #[test]
     fn literal_float() {
         let src = Cursor::new("1.23");
-        let (src, v) = parse_literal(src).unwrap();
+        let (src, v) = literal(src).unwrap();
         assert_eq!(v, Literal::Float(1.23));
         assert_eq!(src.remainder, "");
 

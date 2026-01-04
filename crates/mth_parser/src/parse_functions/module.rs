@@ -5,7 +5,7 @@ pub fn parse_module(src: &'_ str) -> Module<'_> {
     let mut exprs = Vec::new();
 
     loop {
-        match parse_top_level(src.clone()) {
+        match parse_top_level(src) {
             Ok((new_src, tl)) => {
                 src = new_src;
                 exprs.push(tl);

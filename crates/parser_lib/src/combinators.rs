@@ -13,8 +13,8 @@ pub fn preceded<'s, T, D>(p1: Parser!['s, T], p2: Parser!['s, D]) -> Parser!['s,
 
 pub fn terminated<'s, T, D>(p1: Parser!['s, T], p2: Parser!['s, D]) -> Parser!['s, T] {
     move |src| {
-        let (src, v) = p1(src.clone())?;
-        let (src, _) = p2(src.clone())?;
+        let (src, v) = p1(src)?;
+        let (src, _) = p2(src)?;
         Ok((src, v))
     }
 }
@@ -25,9 +25,9 @@ pub fn between<'s, T, D1, D2>(
     d2: Parser!['s, D2],
 ) -> Parser!['s, T] {
     move |src| {
-        let (src, _) = d1(src.clone())?;
-        let (src, v) = p(src.clone())?;
-        let (src, _) = d2(src.clone())?;
+        let (src, _) = d1(src)?;
+        let (src, v) = p(src)?;
+        let (src, _) = d2(src)?;
         Ok((src, v))
     }
 }

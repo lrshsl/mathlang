@@ -1,5 +1,7 @@
 use parser_lib::{cursor::Cursor, parse, pmatch, types::PResult};
 
+use crate::parse_functions::s_expr::s_expr_builtin_math;
+
 use super::*;
 
 /// exprList
@@ -12,7 +14,7 @@ fn parse_expr_list<'s>(mut src: Cursor<'s>) -> PResult<'s, Vec<Expr<'s>>> {
         while let Ok((new_src, _)) = parse!(chr(';'), "Expected ';'", src.clone()) {
             src = new_src;
         }
-        let Ok((new_src, expr)) = parse_expr(src.clone()) else {
+        let Ok((new_src, expr)) = expr(src.clone()) else {
             // TODO
             eprintln!("Error in [parse_expr_list], recovering");
             break;
@@ -24,18 +26,19 @@ fn parse_expr_list<'s>(mut src: Cursor<'s>) -> PResult<'s, Vec<Expr<'s>>> {
 }
 
 /// expr
-///     : s_expr
+///     : expr op=Operator expr
 ///     | primary
-///     | expr op=Operator expr
+///     | s_expr
 ///     ;
 ///
-pub fn parse_expr(src: Cursor) -> PResult<Expr> {
+pub fn expr(src: Cursor) -> PResult<Expr> {
     // if let Ok((src, bin)) = parse_binary_expr(src.clone()) {
     // Ok((src, bin))
     // } else
-    pmatch! {src; err = "[parse_expr] Could not match any subparser";
-        parse_s_expr, x => Expr::SExpr(x);
-        parse_primary, x => x;
+    pmatch! {src; err = "[parse_expr] Could not match any subparser, tried `s_expr_inner` and `primary`";
+        s_expr_inner, x => Expr::SExpr(x);
+        s_expr_builtin_math, x => Expr::SExpr(x);
+        primary, x => x;
     }
 }
 
@@ -43,11 +46,11 @@ pub fn parse_expr(src: Cursor) -> PResult<Expr> {
 ///     : Literal
 ///     | IDENT
 ///     | '(' expr ')'
-pub fn parse_primary(src: Cursor) -> PResult<Expr> {
+pub fn primary(src: Cursor) -> PResult<Expr> {
     pmatch! {src; err = "[parse_primary] Could not match any subparser";
-        parse_literal, x => Expr::Literal(x);
+        literal, x => Expr::Literal(x);
         tok(ident), x => varref(x);
-        between(tok(parse_expr), tok(chr('(')), tok(chr(')'))), x => x;
+        between(tok(expr), tok(chr('(')), tok(chr(')'))), x => x;
     }
 }
 
@@ -55,9 +58,15 @@ pub fn parse_primary(src: Cursor) -> PResult<Expr> {
 mod tests {
     use super::*;
 
-    /// Helper for convenience
+    /// Helpers for convenience
     fn assert_primary(input: &str, expected: Expr, expected_rem: &str) {
-        let (next, expr) = parse_primary(Cursor::new(input)).expect("parse_primary failed");
+        let (next, expr) = primary(Cursor::new(input)).expect("parse_primary failed");
+        assert_eq!(expr, expected, "remainder: {}", next.remainder);
+        assert_eq!(next.remainder, expected_rem);
+    }
+
+    fn assert_expr(input: &str, expected: Expr, expected_rem: &str) {
+        let (next, expr) = expr(Cursor::new(input)).expect("parse_primary failed");
         assert_eq!(expr, expected, "remainder: {}", next.remainder);
         assert_eq!(next.remainder, expected_rem);
     }
@@ -73,22 +82,8 @@ mod tests {
     }
 
     #[test]
-    fn parse_primary_paren_expr() {
-        assert_primary("(42)", int(42), "");
-    }
-
-    #[test]
     fn parse_primary_s_expr() {
         assert_primary("(a 1 2)", s_expr("a", vec![int(1), int(2)]), "");
-    }
-
-    #[test]
-    fn parse_primary_nested() {
-        assert_primary(
-            "a (b c)",
-            s_expr("a", vec![s_expr("b", vec![varref("c")])]),
-            "",
-        );
     }
 
     #[test]
@@ -98,6 +93,15 @@ mod tests {
 
     #[test]
     fn parse_primary_invalid_input() {
-        parse_primary(Cursor::new("!")).expect_err("expected failure on invalid input");
+        primary(Cursor::new("!")).expect_err("expected failure on invalid input");
+    }
+
+    #[test]
+    fn parse_expr_nested() {
+        assert_expr(
+            "a (b c)",
+            s_expr("a", vec![s_expr("b", vec![varref("c")])]),
+            "",
+        );
     }
 }

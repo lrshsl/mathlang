@@ -67,6 +67,13 @@ pub fn keyword<'s>(expected: &'s str) -> Parser!['_, ()] {
     }
 }
 
+/// Map a function to a parser to transform the underlying type
+/// ```
+/// let src = make_cursor("a");
+/// let p = pmap(chr('a'), |c| c.to_ascii_uppercase());
+/// let (_, v) = p(src).unwrap();
+/// assert_eq!(v, 'A');
+/// ```
 pub fn pmap<'s, A, B: Clone>(p: Parser!['s, A], f: impl Fn(A) -> B) -> Parser!['s, B] {
     move |src| {
         let (src, a) = p(src)?;

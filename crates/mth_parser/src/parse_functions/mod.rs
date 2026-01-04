@@ -15,7 +15,7 @@ mod top_level;
 pub use top_level::parse_top_level;
 
 mod expr;
-pub use expr::{parse_expr, parse_primary};
+pub use expr::{expr, primary};
 
 mod type_decl;
 pub use type_decl::parse_type_decl;
@@ -24,10 +24,10 @@ mod mapping;
 pub use mapping::parse_mapping;
 
 mod s_expr;
-pub use s_expr::parse_s_expr;
+pub use s_expr::s_expr_inner;
 
 mod literal;
-pub use literal::parse_literal;
+pub use literal::literal;
 
 #[cfg(test)]
 mod tests;

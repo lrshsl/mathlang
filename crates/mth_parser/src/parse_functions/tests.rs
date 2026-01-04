@@ -75,28 +75,23 @@ fn assert_parses<'s, T: std::fmt::Debug + PartialEq>(
 
 #[test]
 fn parse_literal_int() {
-    assert_parses(parse_literal, "42", Literal::Int(42), "");
+    assert_parses(literal, "42", Literal::Int(42), "");
 }
 
 #[test]
 fn parse_literal_partial() {
-    assert_parses(parse_literal, "42abc", Literal::Int(42), "abc");
+    assert_parses(literal, "42abc", Literal::Int(42), "abc");
 }
 
 #[test]
 fn parse_literal_string() {
-    assert_parses(
-        parse_literal,
-        r#""hello""#,
-        Literal::Str("hello".into()),
-        "",
-    );
+    assert_parses(literal, r#""hello""#, Literal::Str("hello".into()), "");
 }
 
 #[test]
 fn parse_expr_application() {
     assert_parses(
-        parse_expr,
+        expr,
         "add x y",
         s_expr("add", vec![varref("x"), varref("y")]),
         "",
