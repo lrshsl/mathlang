@@ -13,7 +13,7 @@ mod parser;
 mod graph;
 use graph::Graph;
 
-use crate::parser::{cursor::Cursor, parse_program};
+use crate::parser::parse_program;
 
 pub const ZOOM_DEFAULT: f64 = 2.0;
 pub const ZOOM_WHEEL_SCALE: f64 = 0.2;
@@ -35,7 +35,6 @@ pub struct MainState {
 pub enum Message {
     EditText(widget::text_editor::Action),
     PanningDelta(DVec2),
-    UpdateZoom(f64),
     ZoomDelta(DVec2, Rectangle, f64),
     SetError(String),
     ClearErrors,
@@ -58,9 +57,6 @@ impl MainState {
             }
             Message::PanningDelta(delta) => {
                 self.graph.controls.center -= 2.0 * delta * self.graph.controls.scale();
-            }
-            Message::UpdateZoom(zoom) => {
-                self.graph.controls.zoom = zoom;
             }
             Message::ZoomDelta(_pos, _bounds, delta) => {
                 let delta = delta * ZOOM_WHEEL_SCALE;
