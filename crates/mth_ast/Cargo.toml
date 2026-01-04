@@ -1,0 +1,4 @@
+[package]
+name = "mth_ast"
+version.workspace = true
+edition.workspace = true

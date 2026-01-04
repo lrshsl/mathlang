@@ -1,6 +1,6 @@
 use super::*;
 
-pub fn parse_module(src: &str) -> Module {
+pub fn parse_module(src: &'_ str) -> Module<'_> {
     let mut src = Cursor::new(src);
     let mut exprs = Vec::new();
 

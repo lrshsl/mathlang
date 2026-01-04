@@ -1,10 +1,4 @@
-use crate::{
-    choice, parse,
-    parser::{
-        cursor::Cursor,
-        parser_lib::{combinators::*, helpers::*, primitives::*},
-    },
-};
+use crate::{choice, combinators::*, cursor::Cursor, helpers::*, parse, primitives::*};
 
 fn make_cursor(s: &str) -> Cursor<'_> {
     Cursor::new(s)

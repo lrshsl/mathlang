@@ -1,0 +1,9 @@
+[package]
+name = "graph_canvas"
+version.workspace = true
+edition.workspace = true
+
+[dependencies]
+bytemuck = "1.23.1"
+glam = { version = "0.30.4", features = ["bytemuck"] }
+iced = { version = "0.13.1", features = ["canvas", "highlighter", "advanced"] }

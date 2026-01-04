@@ -1,4 +1,4 @@
-use crate::{Parser, parser::types::PError};
+use crate::{Parser, types::PError};
 
 pub fn okparser<'s, T: Clone>(v: T) -> Parser!['s, T] {
     move |src| Ok((src, v.clone()))

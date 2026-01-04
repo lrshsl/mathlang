@@ -1,0 +1,7 @@
+[package]
+name = "parser_lib"
+version.workspace = true
+edition.workspace = true
+
+[dependencies]
+nom = "8.0.0"

@@ -8,10 +8,8 @@ use iced::{
 
 use super::ops::*;
 use crate::{
-    graph::{
-        Controls,
-        graph_shader_pipeline::{FragmentShaderPipeline, Uniforms},
-    },
+    controls::Controls,
+    graph_shader_pipeline::{FragmentShaderPipeline, Uniforms},
     inst,
 };
 

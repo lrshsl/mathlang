@@ -1,10 +1,8 @@
 use crate::{
     Parser,
-    parser::{
-        cursor::Cursor,
-        parser_lib::primitives::satisfy,
-        types::{PError, PResult},
-    },
+    cursor::Cursor,
+    primitives::satisfy,
+    types::{PError, PResult},
 };
 
 #[macro_export]

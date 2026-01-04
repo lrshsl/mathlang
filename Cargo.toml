@@ -1,10 +1,20 @@
-[package]
-name = "mathlang"
+[workspace]
+resolver = "2"
+
+default-members = [
+    "bin/mth_editor",
+]
+members = [
+    "crates/graph_canvas",
+    "crates/mth_ast",
+    "crates/mth_parser",
+    "crates/parser_lib",
+    "bin/mth_editor",
+]
+
+# Inherited by sub-packages
+[workspace.package]
 version = "0.1.0"
 edition = "2024"
 
-[dependencies]
-bytemuck = "1.23.1"
-glam = { version = "0.30.4", features = ["bytemuck"] }
-iced = { version = "0.13.1", features = ["canvas", "highlighter", "advanced"] }
-nom = "8.0.0"
+

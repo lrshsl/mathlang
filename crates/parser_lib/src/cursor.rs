@@ -1,6 +1,6 @@
 use std::str::Chars;
 
-use crate::parser::types::FileContext;
+use crate::types::FileContext;
 
 #[derive(Debug, Clone)]
 pub struct Cursor<'s> {

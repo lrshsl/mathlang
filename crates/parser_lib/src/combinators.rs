@@ -1,6 +1,6 @@
 use crate::{
     Parser,
-    parser::types::{BoxedParser, PError},
+    types::{BoxedParser, PError},
 };
 
 pub fn preceded<'s, T, D>(p1: Parser!['s, T], p2: Parser!['s, D]) -> Parser!['s, T] {
@@ -53,7 +53,7 @@ pub fn choice_f<'s, T>(parsers: Vec<BoxedParser<'s, T>>) -> Parser!['s, T] {
 #[macro_export]
 macro_rules! choice {
     ( $( $x:expr ),+ $(,)? ) => {
-        $crate::parser::parser_lib::combinators::choice_f(vec![
+        $crate::combinators::choice_f(vec![
             $(
                 Box::new($x)
             ),+

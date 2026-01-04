@@ -1,8 +1,4 @@
-use crate::{
-    parse,
-    parser::{cursor::Cursor, types::PResult},
-    pmatch,
-};
+use parser_lib::{cursor::Cursor, parse, pmatch, types::PResult};
 
 use super::*;
 

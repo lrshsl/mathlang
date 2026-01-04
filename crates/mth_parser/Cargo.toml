@@ -1,0 +1,9 @@
+[package]
+name = "mth_parser"
+version.workspace = true
+edition.workspace = true
+
+[dependencies]
+mth_ast = { path = "../mth_ast" }
+graph_canvas = { path = "../graph_canvas" }
+parser_lib = { path = "../parser_lib" }

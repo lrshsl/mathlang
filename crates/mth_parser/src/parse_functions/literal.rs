@@ -1,4 +1,4 @@
-use crate::{choice, parse};
+use parser_lib::choice;
 
 use super::*;
 

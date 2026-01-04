@@ -1,10 +1,10 @@
 use std::collections::HashMap;
 
-use crate::parser::cursor::Cursor;
+use crate::cursor::Cursor;
 
 type Params = Vec<String>;
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Default)]
 pub struct Context {
     functions: HashMap<String, Vec<Params>>,
 }
@@ -56,11 +56,11 @@ impl std::fmt::Display for PError {
 
 pub type PResult<'s, O> = Result<(Cursor<'s>, O), PError>;
 
-pub type BoxedParser<'s, T> = Box<dyn Fn(crate::parser::cursor::Cursor<'s>) -> PResult<'s, T> + 's>;
+pub type BoxedParser<'s, T> = Box<dyn Fn(crate::cursor::Cursor<'s>) -> PResult<'s, T> + 's>;
 
 #[macro_export]
 macro_rules! Parser {
     ($lt:lifetime, $out:ty) => {
-        impl Fn(crate::parser::cursor::Cursor<$lt>) -> crate::parser::types::PResult<'_, $out>
+        impl Fn(crate::cursor::Cursor<$lt>) -> crate::types::PResult<$lt, $out>
     };
 }

@@ -1,0 +1,10 @@
+[package]
+name = "mth_editor"
+version.workspace = true
+edition.workspace = true
+
+[dependencies]
+mth_parser = { path = "../../crates/mth_parser" }
+graph_canvas = { path = "../../crates/graph_canvas" }
+glam = { version = "0.30.4", features = ["bytemuck"] }
+iced = { version = "0.13.1", features = ["canvas", "highlighter", "advanced"] }

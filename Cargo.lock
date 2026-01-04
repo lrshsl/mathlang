@@ -1318,6 +1318,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "graph_canvas"
+version = "0.1.0"
+dependencies = [
+ "bytemuck",
+ "glam 0.30.5",
+ "iced",
+]
+
+[[package]]
 name = "guillotiere"
 version = "0.6.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1833,16 +1842,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "mathlang"
-version = "0.1.0"
-dependencies = [
- "bytemuck",
- "glam 0.30.5",
- "iced",
- "nom",
-]
-
-[[package]]
 name = "memchr"
 version = "2.7.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1889,6 +1888,29 @@ checksum = "1fa76a2c86f704bdb222d66965fb3d63269ce38518b83cb0575fca855ebb6316"
 dependencies = [
  "adler2",
  "simd-adler32",
+]
+
+[[package]]
+name = "mth_ast"
+version = "0.1.0"
+
+[[package]]
+name = "mth_editor"
+version = "0.1.0"
+dependencies = [
+ "glam 0.30.5",
+ "graph_canvas",
+ "iced",
+ "mth_parser",
+]
+
+[[package]]
+name = "mth_parser"
+version = "0.1.0"
+dependencies = [
+ "graph_canvas",
+ "mth_ast",
+ "parser_lib",
 ]
 
 [[package]]
@@ -2384,6 +2406,13 @@ dependencies = [
  "redox_syscall 0.5.17",
  "smallvec",
  "windows-targets 0.52.6",
+]
+
+[[package]]
+name = "parser_lib"
+version = "0.1.0"
+dependencies = [
+ "nom",
 ]
 
 [[package]]

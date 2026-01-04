@@ -1,25 +1,10 @@
 use std::sync::Arc;
 
 use glam::{DVec2, dvec2};
-use iced::{
-    Rectangle,
-    advanced::Shell,
-    event::Status,
-    mouse::{self, Cursor},
-    widget::shader,
-};
+use graph_canvas::{FragmentShaderPrimitive, controls::Controls, ops::Instruction};
+use iced::{Rectangle, advanced::Shell, event::Status, mouse, widget::shader};
 
-use crate::{
-    Message,
-    graph::{
-        fragment_shader_primitive::FragmentShaderPrimitive, graph_shader_pipeline::Controls,
-        ops::Instruction,
-    },
-};
-
-mod fragment_shader_primitive;
-mod graph_shader_pipeline;
-pub mod ops;
+use crate::message::Message;
 
 #[derive(Default)]
 pub struct Graph {
@@ -50,7 +35,7 @@ impl shader::Program<Message> for Graph {
         state: &mut Self::State,
         event: shader::Event,
         bounds: Rectangle,
-        cursor: Cursor,
+        cursor: mouse::Cursor,
         _shell: &mut Shell<'_, Message>,
     ) -> (Status, Option<Message>) {
         // Zooming

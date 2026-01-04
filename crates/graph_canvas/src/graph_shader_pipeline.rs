@@ -1,4 +1,4 @@
-use glam::{DVec2, Vec2};
+use glam::Vec2;
 use iced::{
     Rectangle,
     widget::shader::wgpu::{self, util::DeviceExt as _},
@@ -185,26 +185,5 @@ impl FragmentShaderPipeline {
         pass.set_bind_group(1, &self.bind_group_1, &[]);
 
         pass.draw(0..3, 0..1);
-    }
-}
-
-#[derive(Debug, Clone, Copy)]
-pub struct Controls {
-    pub zoom: f64,
-    pub center: DVec2,
-}
-
-impl Controls {
-    pub fn scale(&self) -> f64 {
-        1.0 / 2.0_f64.powf(self.zoom) / ZOOM_PIXELS_FACTOR
-    }
-}
-
-impl Default for Controls {
-    fn default() -> Self {
-        Self {
-            zoom: 1.,
-            center: DVec2::ZERO,
-        }
     }
 }
