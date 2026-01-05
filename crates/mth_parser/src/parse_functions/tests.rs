@@ -172,7 +172,7 @@ fn parse_module_simple() {
         b -> 2;
     "#;
 
-    let module = parse_module(src);
+    let (_, module) = parse_module(Cursor::new(src)).unwrap();
 
     assert_eq!(
         module,

@@ -27,17 +27,17 @@ fn parse_expr_list<'s>(mut src: Cursor<'s>) -> PResult<'s, Vec<Expr<'s>>> {
 
 /// expr
 ///     : expr op=Operator expr
-///     | primary
 ///     | s_expr
+///     | primary
 ///     ;
 ///
 pub fn expr(src: Cursor) -> PResult<Expr> {
     // if let Ok((src, bin)) = parse_binary_expr(src.clone()) {
     // Ok((src, bin))
     // } else
-    pmatch! {src; err = "[parse_expr] Could not match any subparser, tried `s_expr_inner` and `primary`";
-        s_expr_inner, x => Expr::SExpr(x);
+    pmatch! {src; err = "[parse_expr] Could not match any subparser, tried `expr <op> expr`, `s_expr_inner` and `primary`";
         s_expr_builtin_math, x => Expr::SExpr(x);
+        s_expr_inner, x => Expr::SExpr(x);
         primary, x => x;
     }
 }

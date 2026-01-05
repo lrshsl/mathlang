@@ -14,9 +14,9 @@ pub fn s_expr_builtin_math(src: Cursor) -> PResult<SExpr> {
         .map(|op| Box::new(tok(chr(op))) as BoxedParser<'_, char>)
         .collect::<Vec<_>>();
 
-    let (src, lhs) = parse!(expr, "Could not parse lhs expr", src)?;
+    let (src, lhs) = parse!(primary, "Could not parse lhs expr", src)?;
     let (src, op) = parse!(choice_f(ops), "Could not parse operator expr", src)?;
-    let (src, rhs) = parse!(expr, "Could not parse rhs expr", src)?;
+    let (src, rhs) = parse!(primary, "Could not parse rhs expr", src)?;
 
     let name = match op {
         '+' => "__builtin__add",

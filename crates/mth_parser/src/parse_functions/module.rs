@@ -1,11 +1,11 @@
 use super::*;
 
-pub fn parse_module(src: &'_ str) -> Module<'_> {
-    let mut src = Cursor::new(src);
+pub fn parse_module(src: Cursor) -> PResult<Module> {
+    let mut src = src;
     let mut exprs = Vec::new();
 
     loop {
-        match parse_top_level(src) {
+        match parse_top_level(src.clone()) {
             Ok((new_src, tl)) => {
                 src = new_src;
                 exprs.push(tl);
@@ -14,8 +14,11 @@ pub fn parse_module(src: &'_ str) -> Module<'_> {
         }
     }
 
-    Module {
-        name: None,
-        top_level: exprs,
-    }
+    Ok((
+        src,
+        Module {
+            name: None,
+            top_level: exprs,
+        },
+    ))
 }
