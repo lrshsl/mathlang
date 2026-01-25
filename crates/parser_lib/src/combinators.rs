@@ -1,7 +1,15 @@
 use crate::{
     Parser,
+    primitives::pmap,
     types::{BoxedParser, PError},
 };
+
+pub fn or<'s, T>(p1: Parser!['s, T], p2: Parser!['s, T]) -> Parser!['s, T] {
+    move |src| match p1(src.clone()) {
+        Ok(val) => Ok(val),
+        Err(_) => p2(src),
+    }
+}
 
 pub fn preceded<'s, T, D>(p1: Parser!['s, T], p2: Parser!['s, D]) -> Parser!['s, T] {
     move |src| {
@@ -106,4 +114,23 @@ pub fn some<'s, T>(p: Parser!['s, T]) -> Parser!['s, Vec<T>] {
 
         Ok((src, out))
     }
+}
+
+pub fn then_append<'s, T>(ps: Parser!['s, Vec<T>], p: Parser!['s, T]) -> Parser!['s, Vec<T>] {
+    move |src| {
+        let (src, mut xs) = ps(src)?;
+        let (src, x) = p(src)?;
+        xs.push(x);
+        Ok((src, xs))
+    }
+}
+
+pub fn delimited1<'s, T: Clone, Del>(
+    p: impl Fn(crate::cursor::Cursor<'s>) -> crate::types::PResult<'s, T> + Clone,
+    del: Parser!['s, Del],
+) -> Parser!['s, Vec<T>] {
+    or(
+        then_append(some(terminated(p.clone(), del)), p.clone()),
+        pmap(p, |x| vec![x]),
+    )
 }
