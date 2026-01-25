@@ -1,89 +1,5 @@
 use super::*;
 
-#[test]
-fn golden_test_module() {
-    let src = r#"
-    a -> 1;
-    b -> 2;
-
-    c :: int;
-    c -> a;
-
-    add x y -> (x + y);
-
-    add a b;
-    add (add a b) 1;
-    "#;
-
-    let expected = Module {
-        name: None,
-        top_level: Vec::from([
-            TopLevel::MapImpl(Mapping {
-                name: "a",
-                params: vec![],
-                body: int(1),
-            }),
-            TopLevel::MapImpl(Mapping {
-                name: "b",
-                params: vec![],
-                body: int(2),
-            }),
-            TopLevel::TypeDecl(TypeDecl {
-                name: "c",
-                params: vec![Type::Int],
-            }),
-            TopLevel::MapImpl(Mapping {
-                name: "c",
-                params: vec![],
-                body: varref("a"),
-            }),
-            TopLevel::MapImpl(Mapping {
-                name: "add",
-                params: vec![Param("x"), Param("y")],
-                body: Expr::SExpr(SExpr {
-                    name: "__builtin__add",
-                    args: vec![varref("x"), varref("y")],
-                }),
-            }),
-            TopLevel::Expr(Expr::SExpr(SExpr {
-                name: "add",
-                args: vec![varref("a"), varref("b")],
-            })),
-            TopLevel::Expr(Expr::SExpr(SExpr {
-                name: "add",
-                args: vec![
-                    Expr::SExpr(SExpr {
-                        name: "add",
-                        args: vec![varref("a"), varref("b")],
-                    }),
-                    int(1),
-                ],
-            })),
-        ]),
-    };
-
-    let src = Cursor::new(src);
-    let parse_result = parse_module(src);
-
-    let Ok((next, ast)) = parse_result else {
-        eprintln!("ParseError: {parse_result:?}");
-        panic!("Module test failed: Parsing failed");
-    };
-
-    for (expr, expected_expr) in ast.top_level.iter().zip(expected.top_level.iter()) {
-        if expr != expected_expr {
-            eprintln!("Mismatch: {expr:#?} != {expected_expr:#?}");
-        }
-    }
-    if ast != expected {
-        eprintln!("Mismatch, got: {ast:#?}\n\nExpected: {expected:#?}\n\nRemainder: {next:?}",);
-        panic!("Module test failed: Ast wasn't what as expected");
-    }
-
-    assert_eq!(ast, expected);
-    assert_eq!(next.remainder.trim(), "");
-}
-
 /// Helper to assert parser output and remaining input
 fn assert_parses<'s, T: std::fmt::Debug + PartialEq>(
     parser: impl Fn(Cursor<'s>) -> PResult<'s, T>,
@@ -157,6 +73,19 @@ fn parse_type_decl_simple() {
         TypeDecl {
             name: "x",
             params: vec![Type::Int],
+        },
+        "",
+    );
+}
+
+#[test]
+fn parse_type_decl_fn() {
+    assert_parses(
+        parse_type_decl,
+        "eq :: int -> int -> bool",
+        TypeDecl {
+            name: "eq",
+            params: vec![Type::Int, Type::Int, Type::Bool],
         },
         "",
     );

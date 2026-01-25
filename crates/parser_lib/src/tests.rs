@@ -1,12 +1,8 @@
 use crate::{choice, combinators::*, cursor::Cursor, helpers::*, parse, primitives::*};
 
-fn make_cursor(s: &str) -> Cursor<'_> {
-    Cursor::new(s)
-}
-
 #[test]
 fn test_satisfy() {
-    let src = make_cursor("abc");
+    let src = Cursor::new("abc");
     println!("{}", src.ctx);
     let (src, ch) = satisfy(|c| c == 'a')(src).unwrap();
     assert_eq!(ch, 'a');
@@ -21,7 +17,7 @@ fn test_satisfy() {
 
 #[test]
 fn test_chr_success_and_fail() {
-    let src = make_cursor("abc");
+    let src = Cursor::new("abc");
     let (src, ch) = chr('a')(src).unwrap();
     assert_eq!(ch, 'a');
     assert_eq!(src.cur_char, Some('b'));
@@ -32,7 +28,7 @@ fn test_chr_success_and_fail() {
 
 #[test]
 fn test_digit_and_some() {
-    let src = make_cursor("123xyz");
+    let src = Cursor::new("123xyz");
     let (src, digits) = some(digit(10))(src).unwrap();
     assert_eq!(String::from_iter(digits), "123");
     assert_eq!(src.cur_char, Some('x'));
@@ -40,7 +36,7 @@ fn test_digit_and_some() {
 
 #[test]
 fn test_whitespace_and_tok() {
-    let src = make_cursor("   a");
+    let src = Cursor::new("   a");
     let (src, ch) = tok(chr('a'))(src).unwrap();
     assert_eq!(ch, 'a');
     assert_eq!(src.cur_char, None);
@@ -48,12 +44,12 @@ fn test_whitespace_and_tok() {
 
 #[test]
 fn test_optional_success_and_none() {
-    let src = make_cursor("x");
+    let src = Cursor::new("x");
     let (src, maybe) = optional(chr('x'))(src).unwrap();
     assert_eq!(maybe, Some('x'));
     assert_eq!(src.cur_char, None);
 
-    let src = make_cursor("y");
+    let src = Cursor::new("y");
     let (src, maybe) = optional(chr('x'))(src).unwrap();
     assert_eq!(maybe, None);
     assert_eq!(src.cur_char, Some('y'));
@@ -61,7 +57,7 @@ fn test_optional_success_and_none() {
 
 #[test]
 fn test_choice_macro() {
-    let src = make_cursor("a");
+    let src = Cursor::new("a");
     let p = choice!(chr('x'), chr('a'), chr('z'));
     let (_, ch) = p(src).unwrap();
     assert_eq!(ch, 'a');
@@ -69,17 +65,17 @@ fn test_choice_macro() {
 
 #[test]
 fn test_many0_and_some() {
-    let src = make_cursor("aaa!");
+    let src = Cursor::new("aaa!");
     let (src, out) = many0(chr('a'))(src).unwrap();
     assert_eq!(out, vec!['a', 'a', 'a']);
     assert_eq!(src.cur_char, Some('!'));
 
-    let src = make_cursor("!");
+    let src = Cursor::new("!");
     let (src, out) = many0(chr('a'))(src).unwrap();
     assert!(out.is_empty());
     assert_eq!(src.cur_char, Some('!'));
 
-    let src = make_cursor("bb");
+    let src = Cursor::new("bb");
     let (src, out) = some(chr('b'))(src).unwrap();
     assert_eq!(out, vec!['b', 'b']);
     assert_eq!(src.cur_char, None);
@@ -87,7 +83,7 @@ fn test_many0_and_some() {
 
 #[test]
 fn test_ident() {
-    let src = make_cursor("hello123 world");
+    let src = Cursor::new("hello123 world");
     let (src, name) = ident(src).unwrap();
     assert_eq!(name, "hello123");
     assert_eq!(src.cur_char, Some(' '));
@@ -95,7 +91,7 @@ fn test_ident() {
 
 #[test]
 fn test_pmap() {
-    let src = make_cursor("a");
+    let src = Cursor::new("a");
     let p = pmap(chr('a'), |c| c.to_ascii_uppercase());
     let (_, v) = p(src).unwrap();
     assert_eq!(v, 'A');
@@ -103,7 +99,7 @@ fn test_pmap() {
 
 #[test]
 fn test_okparser_and_parse_macro() {
-    let src = make_cursor("");
+    let src = Cursor::new("");
     let parser = okparser(123);
     let (_, v) = parse!(parser, "Failed to run okparser", src).unwrap();
     assert_eq!(v, 123);
@@ -111,7 +107,7 @@ fn test_okparser_and_parse_macro() {
 
 #[test]
 fn test_digit_failure() {
-    let src = make_cursor("abc");
+    let src = Cursor::new("abc");
     let err = digit(10)(src).unwrap_err();
     assert!(err.msg.contains("Predicate failed"));
 }

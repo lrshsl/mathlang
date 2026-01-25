@@ -1,7 +1,8 @@
 use crate::{
     Parser,
+    cursor::Cursor,
     primitives::pmap,
-    types::{BoxedParser, PError},
+    types::{BoxedParser, PError, PResult},
 };
 
 pub fn or<'s, T>(p1: Parser!['s, T], p2: Parser!['s, T]) -> Parser!['s, T] {
@@ -125,12 +126,18 @@ pub fn then_append<'s, T>(ps: Parser!['s, Vec<T>], p: Parser!['s, T]) -> Parser!
     }
 }
 
-pub fn delimited1<'s, T: Clone, Del>(
-    p: impl Fn(crate::cursor::Cursor<'s>) -> crate::types::PResult<'s, T> + Clone,
-    del: Parser!['s, Del],
-) -> Parser!['s, Vec<T>] {
-    or(
-        then_append(some(terminated(p.clone(), del)), p.clone()),
-        pmap(p, |x| vec![x]),
-    )
+/// Parses `p` delimited by `del`. Requires will fail on empty input.
+///
+/// ```rust
+/// # use parser_lib::combinators::delimited1;
+/// # use parser_lib::primitives::chr;
+/// # use parser_lib::helpers::{ident, tok};
+/// # use parser_lib::cursor::Cursor;
+///
+/// let src = Cursor::new("a, b, c");
+/// let (_, result) = delimited1(tok(ident), tok(chr(',')))(src).unwrap();
+/// assert_eq!(result, vec!["a", "b", "c"])
+/// ```
+pub fn delimited1<'s, T, Del>(p: Parser!['s, T], del: Parser!['s, Del]) -> Parser!['s, Vec<T>] {
+    move |src| then_append(many0(terminated(&p, &del)), &p)(src)
 }

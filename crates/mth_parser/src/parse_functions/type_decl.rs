@@ -3,7 +3,11 @@ use super::*;
 pub fn parse_type_decl(src: Cursor) -> PResult<TypeDecl> {
     let (src, name) = parse!(tok(ident), "Could not parse type name", src)?;
     let (src, _) = parse!(tok(keyword("::")), "Could not find '::'", src)?;
-    let (src, params) = parse!(some(parse_type), "Could not parse type params", src)?;
+    let (src, params) = parse!(
+        delimited1(parse_type, tok(keyword("->"))),
+        "Could not parse type params",
+        src
+    )?;
     Ok((src, TypeDecl { name, params }))
 }
 
