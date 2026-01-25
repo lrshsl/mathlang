@@ -3,6 +3,7 @@ use crate::{choice, combinators::*, cursor::Cursor, helpers::*, parse, primitive
 fn make_cursor(s: &str) -> Cursor<'_> {
     Cursor::new(s)
 }
+
 #[test]
 fn test_satisfy() {
     let src = make_cursor("abc");

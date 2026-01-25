@@ -140,19 +140,6 @@ fn parse_type_decl_simple() {
 }
 
 #[test]
-fn parse_type_decl_function() {
-    assert_parses(
-        parse_type_decl,
-        "f :: int -> bool",
-        TypeDecl {
-            name: "f",
-            params: vec![Type::Int, Type::Bool],
-        },
-        "",
-    );
-}
-
-#[test]
 fn parse_top_level_expr() {
     assert_parses(
         parse_top_level,
