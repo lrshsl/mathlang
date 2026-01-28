@@ -373,18 +373,18 @@ checksum = "64fa3c856b712db6612c019f14756e64e4bcea13337a6b33b696333a9eaa2d06"
 
 [[package]]
 name = "bytemuck"
-version = "1.23.2"
+version = "1.24.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "3995eaeebcdf32f91f980d360f78732ddc061097ab4e39991ae7a6ace9194677"
+checksum = "1fbdf580320f38b612e485521afda1ee26d10cc9884efaaa750d383e13e3c5f4"
 dependencies = [
  "bytemuck_derive",
 ]
 
 [[package]]
 name = "bytemuck_derive"
-version = "1.10.1"
+version = "1.10.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "4f154e572231cb6ba2bd1176980827e3d5dc04cc183a75dea38109fbdd672d29"
+checksum = "f9abbd1bc6865053c427f7198e6af43bfdedc55ab791faed4fbd361d789575ff"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -495,6 +495,14 @@ checksum = "4274ea815e013e0f9f04a2633423e14194e408a0576c943ce3d14ca56c50031c"
 dependencies = [
  "thiserror",
  "x11rb",
+]
+
+[[package]]
+name = "code_generator"
+version = "0.1.0"
+dependencies = [
+ "mth_ast",
+ "mth_common",
 ]
 
 [[package]]
@@ -1324,6 +1332,7 @@ dependencies = [
  "bytemuck",
  "glam 0.30.5",
  "iced",
+ "mth_common",
 ]
 
 [[package]]
@@ -1895,12 +1904,21 @@ name = "mth_ast"
 version = "0.1.0"
 
 [[package]]
+name = "mth_common"
+version = "0.1.0"
+dependencies = [
+ "bytemuck",
+]
+
+[[package]]
 name = "mth_editor"
 version = "0.1.0"
 dependencies = [
+ "code_generator",
  "glam 0.30.5",
  "graph_canvas",
  "iced",
+ "mth_common",
  "mth_parser",
 ]
 

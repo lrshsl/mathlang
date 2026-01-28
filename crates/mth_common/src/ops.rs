@@ -10,6 +10,8 @@ pub const OP_SIN: u32 = 7;
 pub const OP_TAN: u32 = 8;
 pub const OP_LOG: u32 = 9;
 
+pub type Instructions = Vec<Instruction>;
+
 #[derive(Copy, Clone, Debug, bytemuck::Pod, bytemuck::Zeroable)]
 #[repr(C)]
 pub struct Instruction {

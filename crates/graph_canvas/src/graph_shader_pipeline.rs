@@ -4,7 +4,7 @@ use iced::{
     widget::shader::wgpu::{self, util::DeviceExt as _},
 };
 
-use super::ops::Instruction;
+use mth_common::ops::Instruction;
 
 pub const ZOOM_PIXELS_FACTOR: f64 = 200.0;
 

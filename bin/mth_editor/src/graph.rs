@@ -1,15 +1,17 @@
 use std::sync::Arc;
 
 use glam::{DVec2, dvec2};
-use graph_canvas::{FragmentShaderPrimitive, controls::Controls, ops::Instruction};
 use iced::{Rectangle, advanced::Shell, event::Status, mouse, widget::shader};
+
+use graph_canvas::{FragmentShaderPrimitive, controls::Controls};
+use mth_common::ops::Instructions;
 
 use crate::message::Message;
 
 #[derive(Default)]
 pub struct Graph {
     pub controls: Controls,
-    pub instructions: Arc<Vec<Instruction>>,
+    pub instructions: Arc<Instructions>,
     pub instructions_dirty: bool,
 }
 

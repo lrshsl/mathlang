@@ -9,11 +9,16 @@ impl MainState {
                 self.text.perform(action);
                 let text = self.text.text();
                 match mth_parser::parse_program(&text) {
-                    Ok((_rem, prog)) => {
-                        self.graph.instructions = Arc::new(prog);
-                        self.graph.instructions_dirty = true;
-                        self.update(Message::ClearErrors);
-                    }
+                    Ok((_rem, module)) => match code_generator::compile_module(&module) {
+                        Ok(instructions) => {
+                            self.graph.instructions = Arc::new(instructions);
+                            self.graph.instructions_dirty = true;
+                            self.update(Message::ClearErrors);
+                        }
+                        Err(e) => {
+                            self.update(Message::SetError(format!("Code generation failed: {e:?}")))
+                        }
+                    },
                     Err(e) => self.update(Message::SetError(format!("{e}"))),
                 }
             }

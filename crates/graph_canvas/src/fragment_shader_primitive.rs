@@ -6,15 +6,14 @@ use iced::{
     widget::shader::{self, wgpu},
 };
 
-use super::ops::*;
 use crate::{
     controls::Controls,
     graph_shader_pipeline::{FragmentShaderPipeline, Uniforms},
-    inst,
 };
+use mth_common::{inst, ops::*};
 
 pub const N_INST: usize = 3;
-pub const INSTRUCTIONS: [Instruction; N_INST] = [
+pub const DEFAULT_INSTRUCTIONS: [Instruction; N_INST] = [
     inst!(OP_X_POLY, -1., 3.),
     inst!(OP_CONST, 1.),
     inst!(OP_ADD),
@@ -52,7 +51,11 @@ impl shader::Primitive for FragmentShaderPrimitive {
         viewport: &shader::Viewport,
     ) {
         if !storage.has::<FragmentShaderPipeline>() {
-            storage.store(FragmentShaderPipeline::new(device, format, &INSTRUCTIONS));
+            storage.store(FragmentShaderPipeline::new(
+                device,
+                format,
+                &DEFAULT_INSTRUCTIONS,
+            ));
         }
 
         let pipeline = storage.get_mut::<FragmentShaderPipeline>().unwrap();

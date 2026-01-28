@@ -1,0 +1,8 @@
+[package]
+name = "code_generator"
+version.workspace = true
+edition.workspace = true
+
+[dependencies]
+mth_ast = { path = "../mth_ast" }
+mth_common = { path = "../mth_common" }

@@ -1,8 +1,6 @@
 use crate::{
     Parser,
-    cursor::Cursor,
-    primitives::pmap,
-    types::{BoxedParser, PError, PResult},
+    types::{BoxedParser, PError},
 };
 
 pub fn or<'s, T>(p1: Parser!['s, T], p2: Parser!['s, T]) -> Parser!['s, T] {

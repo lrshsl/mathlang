@@ -8,8 +8,10 @@ members = [
     "crates/graph_canvas",
     "crates/mth_ast",
     "crates/mth_parser",
+    "crates/mth_common",
+    "crates/code_generator",
     "crates/parser_lib",
-    "bin/mth_editor",
+    "bin/mth_editor", "crates/code_generator",
 ]
 
 # Inherited by sub-packages

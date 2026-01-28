@@ -4,7 +4,10 @@ version.workspace = true
 edition.workspace = true
 
 [dependencies]
+mth_common = { path = "../../crates/mth_common" }
 mth_parser = { path = "../../crates/mth_parser" }
+code_generator = { path = "../../crates/code_generator" }
 graph_canvas = { path = "../../crates/graph_canvas" }
+
 glam = { version = "0.30.4", features = ["bytemuck"] }
 iced = { version = "0.13.1", features = ["canvas", "highlighter", "advanced"] }
