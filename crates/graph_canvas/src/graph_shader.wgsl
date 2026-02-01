@@ -12,7 +12,9 @@ const OP_CONST: u32 = 0;
 const OP_X: u32 = 1;
 const OP_X_POLY: u32 = 2;
 const OP_ADD: u32 = 3;
+const OP_SUB: u32 = 10;
 const OP_MUL: u32 = 4;
+const OP_DIV: u32 = 11;
 const OP_POW: u32 = 5;
 const OP_COS: u32 = 6;
 const OP_SIN: u32 = 7;
@@ -22,10 +24,11 @@ const OP_LOG: u32 = 9;
 struct Uniforms {
     resolution: vec2f,
     center: vec2f,
-    scale: f32,
-    _pad: f32,
     viewport_origin: vec2f,
-    _pad2: vec2f,
+    scale: f32,
+    instruction_count: u32,
+    _pad0: f32,
+    _pad1: f32,
 };
 
 @group(0) @binding(0)
@@ -68,7 +71,7 @@ fn eval_function(x: f32) -> f32 {
     var stack: array<f32, 16>; // simple fixed-size stack
     var sp: u32 = 0;
 
-    for (var i: u32 = 0u; i < 6; i = i + 1u) {
+    for (var i: u32 = 0u; i < u.instruction_count; i = i + 1u) {
         let op = instructions[i];
 
         switch op.opcode {
@@ -90,11 +93,23 @@ fn eval_function(x: f32) -> f32 {
             let a = stack[sp - 1u];
             stack[sp - 1u] = a + b;
         }
+        case OP_SUB: { // stack[-2] -= stack[-1]
+            let b = stack[sp - 1u];
+            sp = sp - 1u;
+            let a = stack[sp - 1u];
+            stack[sp - 1u] = a - b;
+        }
         case OP_MUL: { // stack[-2] *= stack[-1]
             let b = stack[sp - 1u];
             sp = sp - 1u;
             let a = stack[sp - 1u];
             stack[sp - 1u] = a * b;
+        }
+        case OP_DIV: { // stack[-2] /= stack[-1]
+            let b = stack[sp - 1u];
+            sp = sp - 1u;
+            let a = stack[sp - 1u];
+            stack[sp - 1u] = a / b;
         }
         case OP_POW: { // stack[-2] **= stack[-1]
             let b = stack[sp - 1u];

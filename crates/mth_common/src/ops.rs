@@ -3,7 +3,9 @@ pub const OP_CONST: u32 = 0;
 pub const OP_X: u32 = 1;
 pub const OP_X_POLY: u32 = 2;
 pub const OP_ADD: u32 = 3;
+pub const OP_SUB: u32 = 10;
 pub const OP_MUL: u32 = 4;
+pub const OP_DIV: u32 = 11;
 pub const OP_POW: u32 = 5;
 pub const OP_COS: u32 = 6;
 pub const OP_SIN: u32 = 7;
@@ -12,7 +14,7 @@ pub const OP_LOG: u32 = 9;
 
 pub type Instructions = Vec<Instruction>;
 
-#[derive(Copy, Clone, Debug, bytemuck::Pod, bytemuck::Zeroable)]
+#[derive(Copy, Clone, Debug, PartialEq, bytemuck::Pod, bytemuck::Zeroable)]
 #[repr(C)]
 pub struct Instruction {
     pub opcode: u32,

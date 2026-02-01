@@ -1,22 +1,23 @@
 use glam::Vec2;
 use iced::{
-    Rectangle,
     widget::shader::wgpu::{self, util::DeviceExt as _},
+    Rectangle,
 };
 
-use mth_common::ops::Instruction;
+use mth_common::ops::{Instruction, OP_CONST};
 
 pub const ZOOM_PIXELS_FACTOR: f64 = 200.0;
 
 #[derive(Copy, Clone, Debug, bytemuck::Pod, bytemuck::Zeroable)]
 #[repr(C)]
 pub struct Uniforms {
-    pub resolution: Vec2,
-    pub center: Vec2,
-    pub scale: f32,
-    pub _pad0: f32,
-    pub viewport_origin: Vec2,
-    pub _pad1: Vec2,
+    pub resolution: Vec2,       // 8 bytes
+    pub center: Vec2,           // 8 bytes
+    pub viewport_origin: Vec2,  // 8 bytes
+    pub scale: f32,             // 4 bytes
+    pub instruction_count: u32, // 4 bytes
+    pub _pad0: f32,             // 4 bytes (alignment)
+    pub _pad1: f32,             // 4 bytes
 }
 
 pub struct FragmentShaderPipeline {
@@ -27,13 +28,16 @@ pub struct FragmentShaderPipeline {
 
     instruction_buffer: wgpu::Buffer,
     bind_group_1: wgpu::BindGroup,
+
+    max_instructions: usize,
 }
 
 impl FragmentShaderPipeline {
     pub fn new(
         device: &wgpu::Device,
         format: wgpu::TextureFormat,
-        instructions: &'static [Instruction],
+        initial_instructions: &[Instruction],
+        max_instructions: usize,
     ) -> Self {
         let shader = device.create_shader_module(wgpu::ShaderModuleDescriptor {
             label: Some("FragmentShaderPipeline shader"),
@@ -107,9 +111,25 @@ impl FragmentShaderPipeline {
             mapped_at_creation: false,
         });
 
+        // Create buffer with max_instructions capacity, initialized with zeros
+        let mut buffer_data = vec![
+            Instruction {
+                opcode: OP_CONST,
+                a: 0.0,
+                b: 0.0,
+            };
+            max_instructions
+        ];
+
+        // Copy initial instructions (if any)
+        let copy_len = std::cmp::min(initial_instructions.len(), max_instructions);
+        for (i, instruction) in initial_instructions.iter().take(copy_len).enumerate() {
+            buffer_data[i] = *instruction;
+        }
+
         let instruction_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
             label: Some("InstructionBuffer"),
-            contents: bytemuck::cast_slice(instructions),
+            contents: bytemuck::cast_slice(&buffer_data),
             usage: wgpu::BufferUsages::STORAGE | wgpu::BufferUsages::COPY_DST,
         });
 
@@ -136,6 +156,7 @@ impl FragmentShaderPipeline {
             bind_group_0,
             instruction_buffer,
             bind_group_1,
+            max_instructions,
         }
     }
 
@@ -144,11 +165,30 @@ impl FragmentShaderPipeline {
     }
 
     pub fn update_program(&self, queue: &wgpu::Queue, instructions: &[Instruction]) {
+        // Pad instructions to max_instructions with zeros
+        let mut buffer_data = vec![
+            Instruction {
+                opcode: OP_CONST,
+                a: 0.0,
+                b: 0.0,
+            };
+            self.max_instructions
+        ];
+
+        let copy_len = std::cmp::min(instructions.len(), self.max_instructions);
+        for (i, instruction) in instructions.iter().take(copy_len).enumerate() {
+            buffer_data[i] = *instruction;
+        }
+
         queue.write_buffer(
             &self.instruction_buffer,
             0,
-            bytemuck::cast_slice(instructions),
+            bytemuck::cast_slice(&buffer_data),
         );
+    }
+
+    pub fn get_max_instructions(&self) -> usize {
+        self.max_instructions
     }
 
     pub fn render(

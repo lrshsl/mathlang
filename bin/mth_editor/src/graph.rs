@@ -4,14 +4,14 @@ use glam::{DVec2, dvec2};
 use iced::{Rectangle, advanced::Shell, event::Status, mouse, widget::shader};
 
 use graph_canvas::{FragmentShaderPrimitive, controls::Controls};
-use mth_common::ops::Instructions;
+use mth_common::ops::Instruction;
 
 use crate::message::Message;
 
 #[derive(Default)]
 pub struct Graph {
     pub controls: Controls,
-    pub instructions: Arc<Instructions>,
+    pub instructions: Arc<Vec<Instruction>>,
     pub instructions_dirty: bool,
 }
 

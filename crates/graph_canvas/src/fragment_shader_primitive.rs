@@ -1,9 +1,9 @@
 use std::sync::Arc;
 
-use glam::{Vec2, vec2};
+use glam::{vec2, Vec2};
 use iced::{
-    Rectangle,
     widget::shader::{self, wgpu},
+    Rectangle,
 };
 
 use crate::{
@@ -55,6 +55,7 @@ impl shader::Primitive for FragmentShaderPrimitive {
                 device,
                 format,
                 &DEFAULT_INSTRUCTIONS,
+                N_INST,
             ));
         }
 
@@ -76,9 +77,10 @@ impl shader::Primitive for FragmentShaderPrimitive {
                 resolution: viewport_size,
                 center: self.controls.center.as_vec2(),
                 scale: self.controls.scale() as f32,
-                _pad0: 0.,
                 viewport_origin,
-                _pad1: Vec2::ZERO,
+                instruction_count: self.instructions.len() as u32,
+                _pad0: 0.,
+                _pad1: 0.,
             },
         );
         if self.instructions_dirty {
