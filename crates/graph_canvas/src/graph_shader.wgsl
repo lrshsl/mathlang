@@ -27,8 +27,6 @@ struct Uniforms {
     viewport_origin: vec2f,
     scale: f32,
     instruction_count: u32,
-    _pad0: f32,
-    _pad1: f32,
 };
 
 @group(0) @binding(0)

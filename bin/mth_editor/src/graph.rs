@@ -1,17 +1,28 @@
-use std::sync::Arc;
+use std::sync::{Arc, Mutex};
 
 use glam::{DVec2, dvec2};
 use iced::{Rectangle, advanced::Shell, event::Status, mouse, widget::shader};
 
-use graph_canvas::{FragmentShaderPrimitive, controls::Controls};
+use graph_canvas::{FragmentShaderPrimitive, N_INSTRUCTIONS, controls::Controls};
 use mth_common::ops::Instruction;
 
 use crate::message::Message;
 
-#[derive(Default)]
+impl Default for Graph {
+    fn default() -> Self {
+        Self {
+            controls: Controls::default(),
+            instructions: Arc::new(Mutex::new([Instruction::default(); N_INSTRUCTIONS])),
+            instruction_count: 0,
+            instructions_dirty: false,
+        }
+    }
+}
+
 pub struct Graph {
     pub controls: Controls,
-    pub instructions: Arc<Vec<Instruction>>,
+    pub instructions: Arc<Mutex<[Instruction; N_INSTRUCTIONS]>>,
+    pub instruction_count: usize,
     pub instructions_dirty: bool,
 }
 
@@ -28,6 +39,7 @@ impl shader::Program<Message> for Graph {
         FragmentShaderPrimitive::new(
             self.controls,
             Arc::clone(&self.instructions),
+            self.instruction_count,
             self.instructions_dirty,
         )
     }

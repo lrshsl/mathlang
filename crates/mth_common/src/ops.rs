@@ -12,14 +12,22 @@ pub const OP_SIN: u32 = 7;
 pub const OP_TAN: u32 = 8;
 pub const OP_LOG: u32 = 9;
 
-pub type Instructions = Vec<Instruction>;
-
 #[derive(Copy, Clone, Debug, PartialEq, bytemuck::Pod, bytemuck::Zeroable)]
 #[repr(C)]
 pub struct Instruction {
     pub opcode: u32,
     pub a: f32,
     pub b: f32,
+}
+
+impl Default for Instruction {
+    fn default() -> Self {
+        Self {
+            opcode: OP_CONST,
+            a: 0.,
+            b: 0.,
+        }
+    }
 }
 
 #[macro_export]

@@ -1,8 +1,5 @@
 use mth_ast::{Expr, Literal, Mapping, Module, SExpr, TopLevel, int, s_expr};
-use mth_common::{
-    inst,
-    ops::{OP_ADD, OP_CONST, OP_COS, OP_DIV, OP_MUL, OP_POW, OP_SIN, OP_SUB},
-};
+use mth_common::{inst, ops::*};
 
 use crate::{
     codegen::{compile_expr, compile_s_expr},

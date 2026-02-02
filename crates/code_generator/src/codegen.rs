@@ -3,7 +3,7 @@ use std::collections::HashMap;
 use mth_ast::{Expr, Literal, Mapping, Module, SExpr, TopLevel};
 use mth_common::{inst, ops::*};
 
-pub fn compile_module(module: &Module) -> Result<Instructions, ()> {
+pub fn compile_module(module: &Module) -> Result<Vec<Instruction>, ()> {
     let mut ctx = HashMap::new();
     for expr in &module.top_level {
         match expr {
@@ -34,20 +34,20 @@ pub fn compile_module(module: &Module) -> Result<Instructions, ()> {
     ]))
 }
 
-pub fn compile_fn(f: &Mapping) -> Result<Instructions, ()> {
+pub fn compile_fn(f: &Mapping) -> Result<Vec<Instruction>, ()> {
     match f {
         Mapping { body, .. } => compile_expr(body),
     }
 }
 
-pub fn compile_expr(expr: &Expr) -> Result<Instructions, ()> {
+pub fn compile_expr(expr: &Expr) -> Result<Vec<Instruction>, ()> {
     match expr {
         Expr::Literal(lit) => compile_literal(lit),
         Expr::SExpr(s_expr) => compile_s_expr(s_expr),
     }
 }
 
-pub fn compile_literal(lit: &Literal) -> Result<Instructions, ()> {
+pub fn compile_literal(lit: &Literal) -> Result<Vec<Instruction>, ()> {
     match lit {
         Literal::Int(int) => Ok(vec![inst!(OP_CONST, *int as f32)]),
         Literal::Float(float) => Ok(vec![inst!(OP_CONST, *float as f32)]),
@@ -55,7 +55,7 @@ pub fn compile_literal(lit: &Literal) -> Result<Instructions, ()> {
     }
 }
 
-pub fn compile_s_expr(s_expr: &SExpr) -> Result<Instructions, ()> {
+pub fn compile_s_expr(s_expr: &SExpr) -> Result<Vec<Instruction>, ()> {
     match s_expr.name {
         // Built-in arithmetic operations
         "__builtin__add" => compile_binary_op(s_expr, OP_ADD),
@@ -110,7 +110,7 @@ pub fn compile_s_expr(s_expr: &SExpr) -> Result<Instructions, ()> {
     }
 }
 
-pub fn compile_binary_op(s_expr: &SExpr, opcode: u32) -> Result<Instructions, ()> {
+pub fn compile_binary_op(s_expr: &SExpr, opcode: u32) -> Result<Vec<Instruction>, ()> {
     if s_expr.args.len() != 2 {
         return Err(());
     }

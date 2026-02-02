@@ -1,40 +1,36 @@
-use std::sync::Arc;
+use std::sync::{Arc, Mutex};
 
-use glam::{vec2, Vec2};
+use glam::{Vec2, vec2};
 use iced::{
-    widget::shader::{self, wgpu},
     Rectangle,
+    widget::shader::{self, wgpu},
 };
+use mth_common::ops::Instruction;
 
 use crate::{
     controls::Controls,
-    graph_shader_pipeline::{FragmentShaderPipeline, Uniforms},
+    graph_shader_pipeline::{FragmentShaderPipeline, N_INSTRUCTIONS, Uniforms},
 };
-use mth_common::{inst, ops::*};
-
-pub const N_INST: usize = 3;
-pub const DEFAULT_INSTRUCTIONS: [Instruction; N_INST] = [
-    inst!(OP_X_POLY, -1., 3.),
-    inst!(OP_CONST, 1.),
-    inst!(OP_ADD),
-];
 
 #[derive(Debug)]
 pub struct FragmentShaderPrimitive {
     controls: Controls,
-    instructions: Arc<Vec<Instruction>>,
+    instructions: Arc<Mutex<[Instruction; N_INSTRUCTIONS]>>,
+    instruction_count: usize,
     pub instructions_dirty: bool,
 }
 
 impl FragmentShaderPrimitive {
     pub fn new(
         controls: Controls,
-        instructions: Arc<Vec<Instruction>>,
+        instructions: Arc<Mutex<[Instruction; N_INSTRUCTIONS]>>,
+        instruction_count: usize,
         instructions_dirty: bool,
     ) -> Self {
         Self {
             controls,
             instructions,
+            instruction_count,
             instructions_dirty,
         }
     }
@@ -51,12 +47,7 @@ impl shader::Primitive for FragmentShaderPrimitive {
         viewport: &shader::Viewport,
     ) {
         if !storage.has::<FragmentShaderPipeline>() {
-            storage.store(FragmentShaderPipeline::new(
-                device,
-                format,
-                &DEFAULT_INSTRUCTIONS,
-                N_INST,
-            ));
+            storage.store(FragmentShaderPipeline::new(device, format));
         }
 
         let pipeline = storage.get_mut::<FragmentShaderPipeline>().unwrap();
@@ -71,6 +62,8 @@ impl shader::Primitive for FragmentShaderPrimitive {
             bounds.x * scale_factor as f32,
             bounds.y * scale_factor as f32,
         );
+
+        // Always update uniforms
         pipeline.update_uniforms(
             queue,
             &Uniforms {
@@ -78,13 +71,14 @@ impl shader::Primitive for FragmentShaderPrimitive {
                 center: self.controls.center.as_vec2(),
                 scale: self.controls.scale() as f32,
                 viewport_origin,
-                instruction_count: self.instructions.len() as u32,
-                _pad0: 0.,
-                _pad1: 0.,
+                instruction_count: self.instruction_count as u32,
             },
         );
+
+        // Update instructions if necessary
         if self.instructions_dirty {
-            pipeline.update_program(queue, &self.instructions);
+            // Note: Doesn't write instruction_count to uniforms
+            pipeline.update_program(queue, &self.instructions, self.instruction_count);
         }
     }
 

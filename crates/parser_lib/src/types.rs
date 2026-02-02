@@ -1,13 +1,4 @@
-use std::collections::HashMap;
-
 use crate::cursor::Cursor;
-
-type Params = Vec<String>;
-
-#[derive(Debug, Clone, Default)]
-pub struct Context {
-    functions: HashMap<String, Vec<Params>>,
-}
 
 #[derive(Debug, Clone)]
 pub struct FileContext {

@@ -1,12 +1,15 @@
+use std::sync::Mutex;
+
 use glam::Vec2;
 use iced::{
-    widget::shader::wgpu::{self, util::DeviceExt as _},
     Rectangle,
+    widget::shader::wgpu::{self, util::DeviceExt as _},
 };
 
-use mth_common::ops::{Instruction, OP_CONST};
+use mth_common::ops::Instruction;
 
 pub const ZOOM_PIXELS_FACTOR: f64 = 200.0;
+pub const N_INSTRUCTIONS: usize = 256;
 
 #[derive(Copy, Clone, Debug, bytemuck::Pod, bytemuck::Zeroable)]
 #[repr(C)]
@@ -16,8 +19,6 @@ pub struct Uniforms {
     pub viewport_origin: Vec2,  // 8 bytes
     pub scale: f32,             // 4 bytes
     pub instruction_count: u32, // 4 bytes
-    pub _pad0: f32,             // 4 bytes (alignment)
-    pub _pad1: f32,             // 4 bytes
 }
 
 pub struct FragmentShaderPipeline {
@@ -28,17 +29,10 @@ pub struct FragmentShaderPipeline {
 
     instruction_buffer: wgpu::Buffer,
     bind_group_1: wgpu::BindGroup,
-
-    max_instructions: usize,
 }
 
 impl FragmentShaderPipeline {
-    pub fn new(
-        device: &wgpu::Device,
-        format: wgpu::TextureFormat,
-        initial_instructions: &[Instruction],
-        max_instructions: usize,
-    ) -> Self {
+    pub fn new(device: &wgpu::Device, format: wgpu::TextureFormat) -> Self {
         let shader = device.create_shader_module(wgpu::ShaderModuleDescriptor {
             label: Some("FragmentShaderPipeline shader"),
             source: wgpu::ShaderSource::Wgsl(std::borrow::Cow::Borrowed(include_str!(
@@ -111,22 +105,8 @@ impl FragmentShaderPipeline {
             mapped_at_creation: false,
         });
 
-        // Create buffer with max_instructions capacity, initialized with zeros
-        let mut buffer_data = vec![
-            Instruction {
-                opcode: OP_CONST,
-                a: 0.0,
-                b: 0.0,
-            };
-            max_instructions
-        ];
-
-        // Copy initial instructions (if any)
-        let copy_len = std::cmp::min(initial_instructions.len(), max_instructions);
-        for (i, instruction) in initial_instructions.iter().take(copy_len).enumerate() {
-            buffer_data[i] = *instruction;
-        }
-
+        // Create buffer with N_INSTRUCTIONS capacity, initialized with nop instructions
+        let buffer_data = [Instruction::default(); N_INSTRUCTIONS];
         let instruction_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
             label: Some("InstructionBuffer"),
             contents: bytemuck::cast_slice(&buffer_data),
@@ -156,7 +136,6 @@ impl FragmentShaderPipeline {
             bind_group_0,
             instruction_buffer,
             bind_group_1,
-            max_instructions,
         }
     }
 
@@ -164,31 +143,20 @@ impl FragmentShaderPipeline {
         queue.write_buffer(&self.uniform_buffer, 0, bytemuck::bytes_of(uniforms));
     }
 
-    pub fn update_program(&self, queue: &wgpu::Queue, instructions: &[Instruction]) {
-        // Pad instructions to max_instructions with zeros
-        let mut buffer_data = vec![
-            Instruction {
-                opcode: OP_CONST,
-                a: 0.0,
-                b: 0.0,
-            };
-            self.max_instructions
-        ];
+    /// Note: instruction_count also needs to be set correctly in the uniforms
+    pub fn update_program(
+        &self,
+        queue: &wgpu::Queue,
+        instructions: &Mutex<[Instruction; N_INSTRUCTIONS]>,
+        instruction_count: usize,
+    ) {
+        let guard = instructions
+            .lock()
+            .expect("Failed to lock instruction mutex");
 
-        let copy_len = std::cmp::min(instructions.len(), self.max_instructions);
-        for (i, instruction) in instructions.iter().take(copy_len).enumerate() {
-            buffer_data[i] = *instruction;
-        }
+        let slice = bytemuck::cast_slice(&guard[..instruction_count]);
 
-        queue.write_buffer(
-            &self.instruction_buffer,
-            0,
-            bytemuck::cast_slice(&buffer_data),
-        );
-    }
-
-    pub fn get_max_instructions(&self) -> usize {
-        self.max_instructions
+        queue.write_buffer(&self.instruction_buffer, 0, slice);
     }
 
     pub fn render(
