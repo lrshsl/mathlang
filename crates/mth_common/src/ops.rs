@@ -25,28 +25,28 @@ pub struct Instruction {
 #[macro_export]
 macro_rules! inst {
     () => {
-        Instruction {
+        $crate::ops::Instruction {
             opcode: OP_CONST,
             a: 0.,
             b: 0.,
         }
     };
     ($opcode:expr) => {
-        Instruction {
+        $crate::ops::Instruction {
             opcode: $opcode,
             a: 0.,
             b: 0.,
         }
     };
     ($opcode:expr, $a:expr) => {
-        Instruction {
+        $crate::ops::Instruction {
             opcode: $opcode,
             a: $a,
             b: 0.,
         }
     };
     ($opcode:expr, $a:expr, $b:expr) => {
-        Instruction {
+        $crate::ops::Instruction {
             opcode: $opcode,
             a: $a,
             b: $b,

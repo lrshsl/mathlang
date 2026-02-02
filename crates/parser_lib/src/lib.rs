@@ -1,7 +1,7 @@
 pub mod combinators;
+pub mod cursor;
 pub mod helpers;
 pub mod primitives;
-pub mod cursor;
 pub mod types;
 
 #[cfg(test)]

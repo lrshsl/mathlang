@@ -50,7 +50,7 @@ pub fn primary(src: Cursor) -> PResult<Expr> {
     pmatch! {src; err = "[parse_primary] Could not match any subparser";
         literal, x => Expr::Literal(x);
         tok(ident), x => varref(x);
-        between(tok(expr), tok(chr('(')), tok(chr(')'))), x => x;
+        between(expr, tok(chr('(')), tok(chr(')'))), x => x;
     }
 }
 
