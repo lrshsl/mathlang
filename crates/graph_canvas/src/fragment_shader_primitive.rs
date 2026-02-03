@@ -1,10 +1,7 @@
 use std::sync::{Arc, Mutex};
 
 use glam::{Vec2, vec2};
-use iced::{
-    Rectangle,
-    widget::shader::{self, wgpu},
-};
+use iced::{Rectangle, wgpu, widget::shader};
 use mth_common::ops::Instruction;
 
 use crate::{
@@ -37,21 +34,16 @@ impl FragmentShaderPrimitive {
 }
 
 impl shader::Primitive for FragmentShaderPrimitive {
+    type Pipeline = FragmentShaderPipeline;
+
     fn prepare(
         &self,
-        device: &wgpu::Device,
+        pipeline: &mut Self::Pipeline,
+        _device: &wgpu::Device,
         queue: &wgpu::Queue,
-        format: wgpu::TextureFormat,
-        storage: &mut shader::Storage,
         bounds: &Rectangle,
         viewport: &shader::Viewport,
     ) {
-        if !storage.has::<FragmentShaderPipeline>() {
-            storage.store(FragmentShaderPipeline::new(device, format));
-        }
-
-        let pipeline = storage.get_mut::<FragmentShaderPipeline>().unwrap();
-
         let viewport_size = Vec2::new(
             viewport.physical_width() as f32,
             viewport.physical_height() as f32,
@@ -84,12 +76,11 @@ impl shader::Primitive for FragmentShaderPrimitive {
 
     fn render(
         &self,
+        pipeline: &Self::Pipeline,
         encoder: &mut wgpu::CommandEncoder,
-        storage: &shader::Storage,
         target: &wgpu::TextureView,
         clip_bounds: &Rectangle<u32>,
     ) {
-        let pipeline = storage.get::<FragmentShaderPipeline>().unwrap();
         pipeline.render(target, encoder, *clip_bounds);
     }
 }

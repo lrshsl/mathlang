@@ -1,7 +1,10 @@
 use std::sync::{Arc, Mutex};
 
 use glam::{DVec2, dvec2};
-use iced::{Rectangle, advanced::Shell, event::Status, mouse, widget::shader};
+use iced::{
+    Event, Rectangle, mouse,
+    widget::{Action, shader},
+};
 
 use graph_canvas::{FragmentShaderPrimitive, N_INSTRUCTIONS, controls::Controls};
 use mth_common::ops::Instruction;
@@ -47,22 +50,20 @@ impl shader::Program<Message> for Graph {
     fn update(
         &self,
         state: &mut Self::State,
-        event: shader::Event,
+        event: &Event,
         bounds: Rectangle,
         cursor: mouse::Cursor,
-        _shell: &mut Shell<'_, Message>,
-    ) -> (Status, Option<Message>) {
+    ) -> Option<Action<Message>> {
         // Zooming
-        if let shader::Event::Mouse(mouse::Event::WheelScrolled { delta }) = event {
+        if let Event::Mouse(mouse::Event::WheelScrolled { delta }) = event {
             if let Some(pos) = cursor.position_in(bounds) {
                 let pos = DVec2::new(pos.x.into(), pos.y.into());
                 let delta = match delta {
                     mouse::ScrollDelta::Lines { y, .. } => y,
                     mouse::ScrollDelta::Pixels { y, .. } => y,
                 };
-                return (
-                    Status::Captured,
-                    Some(Message::ZoomDelta(pos, bounds, delta.into())),
+                return Some(
+                    Action::publish(Message::ZoomDelta(pos, bounds, *delta as f64)).and_capture(),
                 );
             }
         }
@@ -70,28 +71,28 @@ impl shader::Program<Message> for Graph {
         // Panning
         match state {
             (false, _) => match event {
-                shader::Event::Mouse(mouse::Event::ButtonPressed(mouse::Button::Left)) => {
+                Event::Mouse(mouse::Event::ButtonPressed(mouse::Button::Left)) => {
                     if let Some(pos) = cursor.position_over(bounds) {
                         *state = (true, dvec2(pos.x.into(), pos.y.into()));
-                        return (Status::Captured, None);
+                        return Some(Action::capture());
                     }
                 }
                 _ => {}
             },
             (true, prev_pos) => match event {
-                shader::Event::Mouse(mouse::Event::ButtonReleased(mouse::Button::Left)) => {
+                Event::Mouse(mouse::Event::ButtonReleased(mouse::Button::Left)) => {
                     (*state).0 = false;
                 }
-                shader::Event::Mouse(mouse::Event::CursorMoved { position }) => {
+                Event::Mouse(mouse::Event::CursorMoved { position }) => {
                     let pos = DVec2::new(position.x.into(), position.y.into());
                     let delta = pos - *prev_pos;
                     *state = (true, pos);
-                    return (Status::Captured, Some(Message::PanningDelta(delta)));
+                    return Some(Action::publish(Message::PanningDelta(delta)).and_capture());
                 }
                 _ => {}
             },
         }
 
-        (Status::Ignored, None)
+        None
     }
 }

@@ -1,7 +1,7 @@
 use iced::{
     Element,
     Length::{Fill, FillPortion},
-    widget::{self, column, container, row, text, vertical_space},
+    widget::{self, column, container, row, space, text},
 };
 
 use crate::{MainState, message::Message};
@@ -13,7 +13,7 @@ impl MainState {
             row![
                 column![].width(50),
                 self.text_editor_view(),
-                vertical_space(),
+                space().height(Fill),
                 self.graph_view(),
                 column![].width(50)
             ]
@@ -27,7 +27,6 @@ impl MainState {
             text("Editor").size(30).height(FillPortion(6)),
             container(
                 widget::text_editor(&self.text)
-                    .placeholder("f(x) = (-x)**3 + 1")
                     .size(30)
                     .height(Fill)
                     .on_action(Message::EditText)

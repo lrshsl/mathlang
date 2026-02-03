@@ -3,7 +3,8 @@ use std::sync::Mutex;
 use glam::Vec2;
 use iced::{
     Rectangle,
-    widget::shader::wgpu::{self, util::DeviceExt as _},
+    wgpu::{self, util::DeviceExt as _},
+    widget::shader,
 };
 
 use mth_common::ops::Instruction;
@@ -31,8 +32,8 @@ pub struct FragmentShaderPipeline {
     bind_group_1: wgpu::BindGroup,
 }
 
-impl FragmentShaderPipeline {
-    pub fn new(device: &wgpu::Device, format: wgpu::TextureFormat) -> Self {
+impl shader::Pipeline for FragmentShaderPipeline {
+    fn new(device: &wgpu::Device, _queue: &wgpu::Queue, format: wgpu::TextureFormat) -> Self {
         let shader = device.create_shader_module(wgpu::ShaderModuleDescriptor {
             label: Some("FragmentShaderPipeline shader"),
             source: wgpu::ShaderSource::Wgsl(std::borrow::Cow::Borrowed(include_str!(
@@ -80,22 +81,25 @@ impl FragmentShaderPipeline {
             layout: Some(&pipeline_layout),
             vertex: wgpu::VertexState {
                 module: &shader,
-                entry_point: "vs_main",
+                entry_point: Some("vs_main"),
                 buffers: &[],
+                compilation_options: wgpu::PipelineCompilationOptions::default(),
             },
             primitive: wgpu::PrimitiveState::default(),
             depth_stencil: None,
             multisample: wgpu::MultisampleState::default(),
             fragment: Some(wgpu::FragmentState {
                 module: &shader,
-                entry_point: "fs_main",
+                entry_point: Some("fs_main"),
                 targets: &[Some(wgpu::ColorTargetState {
                     format,
                     blend: None,
                     write_mask: wgpu::ColorWrites::ALL,
                 })],
+                compilation_options: wgpu::PipelineCompilationOptions::default(),
             }),
             multiview: None,
+            cache: None,
         });
 
         let uniform_buffer = device.create_buffer(&wgpu::BufferDescriptor {
@@ -138,7 +142,9 @@ impl FragmentShaderPipeline {
             bind_group_1,
         }
     }
+}
 
+impl FragmentShaderPipeline {
     pub fn update_uniforms(&self, queue: &wgpu::Queue, uniforms: &Uniforms) {
         queue.write_buffer(&self.uniform_buffer, 0, bytemuck::bytes_of(uniforms));
     }
@@ -174,6 +180,7 @@ impl FragmentShaderPipeline {
                     load: wgpu::LoadOp::Load,
                     store: wgpu::StoreOp::Store,
                 },
+                depth_slice: None,
             })],
             depth_stencil_attachment: None,
             timestamp_writes: None,

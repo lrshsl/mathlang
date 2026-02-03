@@ -6,6 +6,6 @@ edition.workspace = true
 [dependencies]
 mth_common = { path = "../mth_common" }
 
-bytemuck = { version = "1.23.1", features = ["derive"] }
-glam = { version = "0.30.4", features = ["bytemuck"] }
-iced = { version = "0.13.1", features = ["canvas", "highlighter", "advanced"] }
+bytemuck = { version = "1.25.0", features = ["derive"] }
+glam = { version = "0.31.0", features = ["bytemuck"] }
+iced = { version = "0.14.0", features = ["canvas", "highlighter", "advanced"] }
