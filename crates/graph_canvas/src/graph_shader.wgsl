@@ -54,27 +54,43 @@ fn vs_main(in: VertexIn) -> VertexOut {
 
 @fragment
 fn fs_main(in: VertexOut) -> @location(0) vec4f {
+    // ~= thickness of lines
+    let d = u.pixel_ratio * STROKE_WIDTH;
+
     let local_pos = in.position.xy - u.viewport_origin;
-    var p = (local_pos - u.viewport_size * 0.5) * u.pixel_ratio + u.pan_offset;
+    let scaled_pos = (local_pos - u.viewport_size * 0.5) * u.pixel_ratio;
+
+    if abs(scaled_pos.x) < d && abs(scaled_pos.y) < d {
+        return vec4f(0.5, 0.5, 0.5, 1.);
+    }
+
+    var p = scaled_pos + u.pan_offset;
     p.y = -p.y; // invert y axis for mathematics
 
-    // Maths
-    let d = u.pixel_ratio * STROKE_WIDTH;
+
+    // Maths //
+    // Calculate the expected y
     let curve_y = eval_function(p.x);
 
-    // Derivative -> normal vector -> distance from curve
-    let dx = 0.001;
-    let curve_yd = eval_function(p.x + dx);
-    let tangent = normalize(vec2f(dx, curve_yd - curve_y));
-    let normal = vec2f(-tangent.y, tangent.x);
+    // Calculate distance from curve //
 
-    let dist = dot(p - vec2f(p.x, curve_y), normal);
+    // Central difference (+dx -dx) for more precision
+    let dx = 0.001 * max(1.0, p.x);
+    let dy = (eval_function(p.x + dx) - eval_function(p.x - dx)) / (2.0 * dx);
+    
+    // Vertical distance to the curve
+    let vertical_dist = p.y - curve_y;
+
+    // Normalize
+    // We divide by the length of the gradient vector vec2f(1.0, dy)
+    // This turns vertical distance into perpendicular distance
+    let dist = abs(vertical_dist) / sqrt(1.0 + dy * dy);
 
     if abs(dist) < d {
         return vec4f(1., 1., 1., 1.);
     }
 
-    // x and y Axis
+    // x and y axis
     if abs(p.x) < d || abs(p.y) < d {
         return vec4f(0.3, 0.3, 0.3, 1.);
     }
