@@ -15,10 +15,10 @@ pub const N_INSTRUCTIONS: usize = 256;
 #[derive(Copy, Clone, Debug, bytemuck::Pod, bytemuck::Zeroable)]
 #[repr(C)]
 pub struct Uniforms {
-    pub resolution: Vec2,       // 8 bytes
-    pub center: Vec2,           // 8 bytes
     pub viewport_origin: Vec2,  // 8 bytes
-    pub scale: f32,             // 4 bytes
+    pub viewport_size: Vec2,    // 8 bytes
+    pub pan_offset: Vec2,       // 8 bytes
+    pub pixel_ratio: f32,       // 4 bytes
     pub instruction_count: u32, // 4 bytes
 }
 

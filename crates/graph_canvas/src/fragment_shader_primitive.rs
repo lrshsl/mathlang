@@ -44,12 +44,11 @@ impl shader::Primitive for FragmentShaderPrimitive {
         bounds: &Rectangle,
         viewport: &shader::Viewport,
     ) {
-        let viewport_size = Vec2::new(
-            viewport.physical_width() as f32,
-            viewport.physical_height() as f32,
-        );
-
         let scale_factor = viewport.scale_factor();
+        let viewport_size = Vec2::new(
+            bounds.width * scale_factor as f32,
+            bounds.height * scale_factor as f32,
+        );
         let viewport_origin = vec2(
             bounds.x * scale_factor as f32,
             bounds.y * scale_factor as f32,
@@ -59,10 +58,10 @@ impl shader::Primitive for FragmentShaderPrimitive {
         pipeline.update_uniforms(
             queue,
             &Uniforms {
-                resolution: viewport_size,
-                center: self.controls.center.as_vec2(),
-                scale: self.controls.scale() as f32,
                 viewport_origin,
+                viewport_size,
+                pan_offset: self.controls.offset.as_vec2(),
+                pixel_ratio: self.controls.pixel_ratio() as f32,
                 instruction_count: self.instruction_count as u32,
             },
         );

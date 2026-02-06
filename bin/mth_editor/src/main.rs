@@ -7,7 +7,7 @@ use graph::Graph;
 use iced::widget::text_editor;
 
 pub const ZOOM_DEFAULT: f64 = 2.0;
-pub const ZOOM_WHEEL_SCALE: f64 = 0.2;
+pub const ZOOM_WHEEL_SCALE: f64 = 0.05;
 
 fn main() -> iced::Result {
     iced::application(MainState::new, MainState::update, MainState::view)

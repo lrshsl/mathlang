@@ -10,17 +10,12 @@ impl MainState {
                 self.on_text_change();
             }
             Message::PanningDelta(delta) => {
-                self.graph.controls.center -= 2.0 * delta * self.graph.controls.scale();
+                self.graph.controls.offset -= 2.0 * delta * self.graph.controls.pixel_ratio();
             }
             Message::ZoomDelta(_pos, _bounds, delta) => {
                 let delta = delta * ZOOM_WHEEL_SCALE;
-                // let prev_scale = self.graph.controls.scale();
                 let prev_zoom = self.graph.controls.zoom;
                 self.graph.controls.zoom = prev_zoom + delta;
-
-                // let vec = pos - dvec2(bounds.width.into(), bounds.height.into()) * 0.5;
-                // let new_scale = self.graph.controls.scale();
-                // self.graph.controls.center += vec * (prev_scale - new_scale) * 2.0;
             }
             Message::SetError(err_msg) => self.err_msg = Some(err_msg),
             Message::ClearErrors => self.err_msg = None,

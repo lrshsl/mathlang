@@ -22,10 +22,10 @@ const OP_TAN: u32 = 8;
 const OP_LOG: u32 = 9;
 
 struct Uniforms {
-    resolution: vec2f,
-    center: vec2f,
     viewport_origin: vec2f,
-    scale: f32,
+    viewport_size: vec2f,
+    pan_offset: vec2f,
+    pixel_ratio: f32,
     instruction_count: u32,
 };
 
@@ -50,6 +50,36 @@ fn vs_main(in: VertexIn) -> VertexOut {
     let uv = vec2f(vec2u((in.vertex_index << 1) & 2, in.vertex_index & 2));
     let position = vec4f(uv * 2. - 1., 0., 1.);
     return VertexOut(position);
+}
+
+@fragment
+fn fs_main(in: VertexOut) -> @location(0) vec4f {
+    let local_pos = in.position.xy - u.viewport_origin;
+    var p = (local_pos - u.viewport_size * 0.5) * u.pixel_ratio + u.pan_offset;
+    p.y = -p.y; // invert y axis for mathematics
+
+    // Maths
+    let d = u.pixel_ratio * STROKE_WIDTH;
+    let curve_y = eval_function(p.x);
+
+    // Derivative -> normal vector -> distance from curve
+    let dx = 0.001;
+    let curve_yd = eval_function(p.x + dx);
+    let tangent = normalize(vec2f(dx, curve_yd - curve_y));
+    let normal = vec2f(-tangent.y, tangent.x);
+
+    let dist = dot(p - vec2f(p.x, curve_y), normal);
+
+    if abs(dist) < d {
+        return vec4f(1., 1., 1., 1.);
+    }
+
+    // x and y Axis
+    if abs(p.x) < d || abs(p.y) < d {
+        return vec4f(0.3, 0.3, 0.3, 1.);
+    }
+
+    return vec4f(0., 0., 0., 1.);
 }
 
 fn spow(a: f32, b: f32) -> f32 {
@@ -131,36 +161,6 @@ fn eval_function(x: f32) -> f32 {
         }
     }
     return stack[0];
-}
-
-@fragment
-fn fs_main(in: VertexOut) -> @location(0) vec4f {
-    let d = u.scale * STROKE_WIDTH;
-
-    let point = u.center + (in.position.xy - u.resolution * 0.5) * u.scale;
-    var p = point + u.viewport_origin / u.resolution;
-    p.y = -p.y; // invert y axis for mathematics
-
-    let curve_y = eval_function(p.x);
-
-    // Derivative -> normal vector -> distance from curve
-    let dx = 0.001;
-    let curve_yd = eval_function(p.x + dx);
-    let tangent = normalize(vec2f(dx, curve_yd - curve_y));
-    let normal = vec2f(-tangent.y, tangent.x);
-
-    let dist = dot(p - vec2f(p.x, curve_y), normal);
-
-    if abs(dist) < d {
-        return vec4f(1., 1., 1., 1.);
-    }
-
-    // x and y Axis
-    if abs(p.x) < d || abs(p.y) < d {
-        return vec4f(0.1, 0.1, 0.1, 1.);
-    }
-
-    return vec4f(0., 0., 0., 1.);
 }
 
 
