@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-use mth_ast::{Expr, Literal, Mapping, Module, SExpr, TopLevel};
+use mth_ast::{Expr, FunctionCall, Literal, Mapping, Module, TopLevel};
 use mth_common::{inst, ops::*};
 
 pub fn compile_module(module: &Module) -> Result<Vec<Instruction>, ()> {
@@ -12,11 +12,11 @@ pub fn compile_module(module: &Module) -> Result<Vec<Instruction>, ()> {
                 // Currently it is re-compiled each time it is called
                 let _ = ctx.insert(mapping.name, mapping);
             }
-            TopLevel::Expr(Expr::SExpr(SExpr { name, args })) if *name == "plot" => {
+            TopLevel::Expr(Expr::FunctionCall(FunctionCall { name, args })) if *name == "plot" => {
                 let Some(f) = args.get(0) else {
                     panic!("`plot` requires a function as argument");
                 };
-                let Expr::SExpr(SExpr { name: f, .. }) = f else {
+                let Expr::FunctionCall(FunctionCall { name: f, .. }) = f else {
                     panic!("`plot` requires a function as argument");
                 };
                 let Some(mapping) = ctx.get(f) else {
@@ -43,7 +43,7 @@ pub fn compile_fn(f: &Mapping) -> Result<Vec<Instruction>, ()> {
 pub fn compile_expr(expr: &Expr) -> Result<Vec<Instruction>, ()> {
     match expr {
         Expr::Literal(lit) => compile_literal(lit),
-        Expr::SExpr(s_expr) => compile_s_expr(s_expr),
+        Expr::FunctionCall(s_expr) => compile_s_expr(s_expr),
     }
 }
 
@@ -55,7 +55,7 @@ pub fn compile_literal(lit: &Literal) -> Result<Vec<Instruction>, ()> {
     }
 }
 
-pub fn compile_s_expr(s_expr: &SExpr) -> Result<Vec<Instruction>, ()> {
+pub fn compile_s_expr(s_expr: &FunctionCall) -> Result<Vec<Instruction>, ()> {
     match s_expr.name {
         // Built-in arithmetic operations
         "__builtin__add" => compile_binary_op(s_expr, OP_ADD),
@@ -110,7 +110,7 @@ pub fn compile_s_expr(s_expr: &SExpr) -> Result<Vec<Instruction>, ()> {
     }
 }
 
-pub fn compile_binary_op(s_expr: &SExpr, opcode: u32) -> Result<Vec<Instruction>, ()> {
+pub fn compile_binary_op(s_expr: &FunctionCall, opcode: u32) -> Result<Vec<Instruction>, ()> {
     if s_expr.args.len() != 2 {
         return Err(());
     }

@@ -31,8 +31,8 @@ fn parse_literal_string() {
 fn parse_expr_application() {
     assert_parses(
         expr,
-        "add x y",
-        s_expr("add", vec![varref("x"), varref("y")]),
+        "add(x, y)",
+        function_call("add", vec![varref("x"), varref("y")]),
         "",
     );
 }
@@ -59,7 +59,7 @@ fn parse_mapping_with_params() {
         Mapping {
             name: "add",
             params: vec![Param("x".into()), Param("y".into())],
-            body: s_expr("__builtin__add", vec![varref("x"), varref("y")]),
+            body: function_call("__builtin__add", vec![varref("x"), varref("y")]),
         },
         "",
     );
@@ -95,8 +95,8 @@ fn parse_type_decl_fn() {
 fn parse_top_level_expr() {
     assert_parses(
         parse_top_level,
-        "x;",
-        TopLevel::Expr(Expr::SExpr(SExpr {
+        "x();",
+        TopLevel::Expr(Expr::FunctionCall(FunctionCall {
             name: "x",
             args: vec![],
         })),

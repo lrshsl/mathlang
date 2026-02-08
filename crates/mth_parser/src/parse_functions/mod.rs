@@ -24,7 +24,7 @@ mod mapping;
 pub use mapping::parse_mapping;
 
 mod s_expr;
-pub use s_expr::s_expr_inner;
+pub use s_expr::parse_function_call;
 
 mod literal;
 pub use literal::literal;

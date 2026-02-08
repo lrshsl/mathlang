@@ -1,6 +1,6 @@
 use parser_lib::{cursor::Cursor, parse, pmatch, types::PResult};
 
-use crate::parse_functions::s_expr::s_expr_builtin_math;
+use crate::parse_functions::s_expr::{function_call_builtin_math, parse_function_call};
 
 use super::*;
 
@@ -27,7 +27,7 @@ fn parse_expr_list<'s>(mut src: Cursor<'s>) -> PResult<'s, Vec<Expr<'s>>> {
 
 /// expr
 ///     : expr op=Operator expr
-///     | s_expr
+///     | functionCall
 ///     | primary
 ///     ;
 ///
@@ -35,9 +35,8 @@ pub fn expr(src: Cursor) -> PResult<Expr> {
     // if let Ok((src, bin)) = parse_binary_expr(src.clone()) {
     // Ok((src, bin))
     // } else
-    pmatch! {src; err = "[parse_expr] Could not match any subparser, tried `expr <op> expr`, `s_expr_inner` and `primary`";
-        s_expr_builtin_math, x => Expr::SExpr(x);
-        s_expr_inner, x => Expr::SExpr(x);
+    pmatch! {src; err = "[parse_expr] Could not match any subparser, tried `expr <op> expr`, `function_call_builtin_math` and `primary`";
+        function_call_builtin_math, x => Expr::FunctionCall(x);
         primary, x => x;
     }
 }
@@ -49,6 +48,7 @@ pub fn expr(src: Cursor) -> PResult<Expr> {
 pub fn primary(src: Cursor) -> PResult<Expr> {
     pmatch! {src; err = "[parse_primary] Could not match any subparser";
         literal, x => Expr::Literal(x);
+        parse_function_call, x => Expr::FunctionCall(x);
         tok(ident), x => varref(x);
         between(expr, tok(chr('(')), tok(chr(')'))), x => x;
     }
@@ -82,8 +82,8 @@ mod tests {
     }
 
     #[test]
-    fn parse_primary_s_expr() {
-        assert_primary("(a 1 2)", s_expr("a", vec![int(1), int(2)]), "");
+    fn parse_primary_function_call() {
+        assert_primary("a(1, 2)", function_call("a", vec![int(1), int(2)]), "");
     }
 
     #[test]
@@ -99,8 +99,8 @@ mod tests {
     #[test]
     fn parse_expr_nested() {
         assert_expr(
-            "a (b c)",
-            s_expr("a", vec![s_expr("b", vec![varref("c")])]),
+            "a(b(c))",
+            function_call("a", vec![function_call("b", vec![varref("c")])]),
             "",
         );
     }

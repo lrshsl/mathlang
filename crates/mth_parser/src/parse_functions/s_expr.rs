@@ -1,14 +1,51 @@
-use parser_lib::types::BoxedParser;
+use parser_lib::{combinators::preceded, types::BoxedParser};
 
 use super::*;
 
-pub fn s_expr_inner(src: Cursor) -> PResult<SExpr> {
-    let (src, name) = parse!(tok(ident), "Could not parse s_expr name", src)?;
-    let (src, args) = parse!(many0(primary), "Could not parse s_expr args", src)?;
-    Ok((src, SExpr { name, args }))
+pub fn parse_function_call(src: Cursor) -> PResult<FunctionCall> {
+    let (src, name) = parse!(tok(ident), "Could not parse function name", src)?;
+    let (src, _) = parse!(tok(chr('(')), "Expected '(' after function name", src)?;
+
+    // Parse comma-separated arguments
+    let (src, args) = parse!(
+        parse_comma_separated_args,
+        "Could not parse function arguments",
+        src
+    )?;
+
+    let (src, _) = parse!(tok(chr(')')), "Expected ')' after function arguments", src)?;
+
+    Ok((src, FunctionCall { name, args }))
 }
 
-pub fn s_expr_builtin_math(src: Cursor) -> PResult<SExpr> {
+fn parse_comma_separated_args(src: Cursor) -> PResult<Vec<Expr>> {
+    // Try to parse the first argument
+    match expr(src.clone()) {
+        Ok((src, first)) => {
+            // Parse remaining comma-separated arguments
+            let mut args = vec![first];
+            let mut current_src = src;
+
+            loop {
+                match preceded(expr, tok(chr(',')))(current_src.clone()) {
+                    Ok((new_src, arg)) => {
+                        args.push(arg);
+                        current_src = new_src;
+                    }
+                    Err(_) => break,
+                }
+            }
+
+            Ok((current_src, args))
+        }
+        Err(_) => {
+            // No arguments
+            Ok((src, vec![]))
+        }
+    }
+}
+
+pub fn function_call_builtin_math(src: Cursor) -> PResult<FunctionCall> {
     let ops = "+-*/"
         .chars()
         .map(|op| Box::new(tok(chr(op))) as BoxedParser<'_, char>)
@@ -28,7 +65,7 @@ pub fn s_expr_builtin_math(src: Cursor) -> PResult<SExpr> {
 
     Ok((
         src,
-        SExpr {
+        FunctionCall {
             name,
             args: vec![lhs, rhs],
         },

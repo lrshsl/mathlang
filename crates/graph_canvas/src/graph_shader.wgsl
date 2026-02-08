@@ -86,7 +86,7 @@ fn fs_main(in: VertexOut) -> @location(0) vec4f {
     // This turns vertical distance into perpendicular distance
     let dist = abs(vertical_dist) / sqrt(1.0 + dy * dy);
 
-    if abs(dist) < d {
+    if dist < d {
         return vec4f(1., 1., 1., 1.);
     }
 

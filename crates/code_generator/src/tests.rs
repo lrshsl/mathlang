@@ -1,4 +1,4 @@
-use mth_ast::{Expr, Literal, Mapping, Module, SExpr, TopLevel, int, s_expr};
+use mth_ast::{function_call, int, Expr, FunctionCall, Literal, Mapping, Module, TopLevel};
 use mth_common::{inst, ops::*};
 
 use crate::{
@@ -15,7 +15,7 @@ fn test_compile_literal() {
 
 #[test]
 fn test_compile_add() {
-    let expr = s_expr("__builtin__add", vec![int(1), int(2)]);
+    let expr = function_call("__builtin__add", vec![int(1), int(2)]);
     let result = compile_expr(&expr).unwrap();
     assert_eq!(
         result,
@@ -25,7 +25,7 @@ fn test_compile_add() {
 
 #[test]
 fn test_compile_mul() {
-    let expr = s_expr("__builtin__mul", vec![int(3), int(4)]);
+    let expr = function_call("__builtin__mul", vec![int(3), int(4)]);
     let result = compile_expr(&expr).unwrap();
     assert_eq!(
         result,
@@ -35,7 +35,7 @@ fn test_compile_mul() {
 
 #[test]
 fn test_compile_sub() {
-    let expr = s_expr("__builtin__sub", vec![int(5), int(2)]);
+    let expr = function_call("__builtin__sub", vec![int(5), int(2)]);
     let result = compile_expr(&expr).unwrap();
     assert_eq!(
         result,
@@ -45,7 +45,7 @@ fn test_compile_sub() {
 
 #[test]
 fn test_compile_div() {
-    let expr = s_expr("__builtin__div", vec![int(8), int(2)]);
+    let expr = function_call("__builtin__div", vec![int(8), int(2)]);
     let result = compile_expr(&expr).unwrap();
     assert_eq!(
         result,
@@ -55,21 +55,21 @@ fn test_compile_div() {
 
 #[test]
 fn test_compile_sin() {
-    let expr = s_expr("sin", vec![int(0)]);
+    let expr = function_call("sin", vec![int(0)]);
     let result = compile_expr(&expr).unwrap();
     assert_eq!(result, vec![inst!(OP_CONST, 0.0), inst!(OP_SIN),]);
 }
 
 #[test]
 fn test_compile_cos() {
-    let expr = s_expr("cos", vec![int(0)]);
+    let expr = function_call("cos", vec![int(0)]);
     let result = compile_expr(&expr).unwrap();
     assert_eq!(result, vec![inst!(OP_CONST, 0.0), inst!(OP_COS),]);
 }
 
 #[test]
 fn test_compile_pow() {
-    let expr = s_expr("pow", vec![int(2), int(3)]);
+    let expr = function_call("pow", vec![int(2), int(3)]);
     let result = compile_expr(&expr).unwrap();
     assert_eq!(
         result,
@@ -80,8 +80,8 @@ fn test_compile_pow() {
 #[test]
 fn test_compile_nested_expression() {
     // sin(1 + 2)
-    let inner = s_expr("__builtin__add", vec![int(1), int(2)]);
-    let expr = s_expr("sin", vec![inner]);
+    let inner = function_call("__builtin__add", vec![int(1), int(2)]);
+    let expr = function_call("sin", vec![inner]);
     let result = compile_expr(&expr).unwrap();
     assert_eq!(
         result,
@@ -97,9 +97,9 @@ fn test_compile_nested_expression() {
 #[test]
 fn test_compile_deeply_nested_expression() {
     // pow(1 + 2, sin(0))
-    let inner_add = s_expr("__builtin__add", vec![int(1), int(2)]);
-    let inner_sin = s_expr("sin", vec![int(0)]);
-    let expr = s_expr("pow", vec![inner_add, inner_sin]);
+    let inner_add = function_call("__builtin__add", vec![int(1), int(2)]);
+    let inner_sin = function_call("sin", vec![int(0)]);
+    let expr = function_call("pow", vec![inner_add, inner_sin]);
     let result = compile_expr(&expr).unwrap();
     assert_eq!(
         result,
@@ -115,12 +115,13 @@ fn test_compile_deeply_nested_expression() {
 }
 
 #[test]
-fn test_compile_s_expr_direct() {
-    // Test compile_s_expr directly by extracting SExpr from Expr::SExpr
-    let Expr::SExpr(s_expr) = s_expr("__builtin__add", vec![int(1), int(2)]) else {
-        panic!("Expected Expr::SExpr")
+fn test_compile_function_call_direct() {
+    // Test compile_function_call directly by extracting FunctionCall from Expr::FunctionCall
+    let Expr::FunctionCall(function_call) = function_call("__builtin__add", vec![int(1), int(2)])
+    else {
+        panic!("Expected Expr::FunctionCall")
     };
-    let result = compile_s_expr(&s_expr).unwrap();
+    let result = compile_s_expr(&function_call).unwrap();
     assert_eq!(
         result,
         vec![inst!(OP_CONST, 1.0), inst!(OP_CONST, 2.0), inst!(OP_ADD),]
@@ -130,7 +131,7 @@ fn test_compile_s_expr_direct() {
 #[test]
 fn test_single_literal_instruction_count() {
     // Test that single literal generates exactly 1 instruction
-    let expr = s_expr("sin", vec![int(0)]);
+    let expr = function_call("sin", vec![int(0)]);
     let result = compile_expr(&expr).unwrap();
     assert_eq!(result.len(), 2); // OP_CONST(0.0) + OP_SIN
     assert_eq!(result[0], inst!(OP_CONST, 0.0));
@@ -149,8 +150,8 @@ fn test_constant_zero_instruction_count() {
 #[test]
 fn test_complex_expression_instruction_count() {
     // Test that complex expressions generate correct instruction count
-    let inner = s_expr("__builtin__add", vec![int(1), int(2)]);
-    let expr = s_expr("sin", vec![inner]);
+    let inner = function_call("__builtin__add", vec![int(1), int(2)]);
+    let expr = function_call("sin", vec![inner]);
     let result = compile_expr(&expr).unwrap();
     assert_eq!(result.len(), 4); // OP_CONST(1.0) + OP_CONST(2.0) + OP_ADD + OP_SIN
 }
@@ -168,9 +169,9 @@ fn test_compile_mapping_with_literal() {
         name: None,
         top_level: vec![
             TopLevel::MapImpl(mapping),
-            TopLevel::Expr(Expr::SExpr(SExpr {
+            TopLevel::Expr(Expr::FunctionCall(FunctionCall {
                 name: "plot",
-                args: vec![Expr::SExpr(SExpr {
+                args: vec![Expr::FunctionCall(FunctionCall {
                     name: "a",
                     args: vec![],
                 })],
@@ -189,16 +190,16 @@ fn test_compile_mapping_with_expression() {
     let mapping = Mapping {
         name: "a",
         params: vec![],
-        body: s_expr("__builtin__sub", vec![int(1), int(1)]),
+        body: function_call("__builtin__sub", vec![int(1), int(1)]),
     };
 
     let module = Module {
         name: None,
         top_level: vec![
             TopLevel::MapImpl(mapping),
-            TopLevel::Expr(Expr::SExpr(SExpr {
+            TopLevel::Expr(Expr::FunctionCall(FunctionCall {
                 name: "plot",
-                args: vec![Expr::SExpr(SExpr {
+                args: vec![Expr::FunctionCall(FunctionCall {
                     name: "a",
                     args: vec![],
                 })],

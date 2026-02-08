@@ -29,13 +29,12 @@ paramList
 expr
     : literal
     | IDENT
-    | '(' exprList ')'
-    | expr expr
+    | functionCall
     | expr op=Operator expr
     ;
 
-exprList
-    : (expr (';' expr)* ';'?)?
+functionCall
+    : IDENT '(' (expr (',' expr)*)? ')'
     ;
 
 literal

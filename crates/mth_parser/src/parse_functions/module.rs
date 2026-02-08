@@ -35,8 +35,8 @@ fn golden_test_module() {
     add :: int -> int -> int;
     add x y -> (x + y);
 
-    add a b;
-    add (add a b) 1;
+    add(a, b);
+    add(add(a, b), 1);
     "#;
 
     let expected = Module {
@@ -68,19 +68,19 @@ fn golden_test_module() {
             TopLevel::MapImpl(Mapping {
                 name: "add",
                 params: vec![Param("x"), Param("y")],
-                body: Expr::SExpr(SExpr {
+                body: Expr::FunctionCall(FunctionCall {
                     name: "__builtin__add",
                     args: vec![varref("x"), varref("y")],
                 }),
             }),
-            TopLevel::Expr(Expr::SExpr(SExpr {
+            TopLevel::Expr(Expr::FunctionCall(FunctionCall {
                 name: "add",
                 args: vec![varref("a"), varref("b")],
             })),
-            TopLevel::Expr(Expr::SExpr(SExpr {
+            TopLevel::Expr(Expr::FunctionCall(FunctionCall {
                 name: "add",
                 args: vec![
-                    Expr::SExpr(SExpr {
+                    Expr::FunctionCall(FunctionCall {
                         name: "add",
                         args: vec![varref("a"), varref("b")],
                     }),
