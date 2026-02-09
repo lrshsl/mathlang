@@ -52,6 +52,6 @@ pub type BoxedParser<'s, T> = Box<dyn Fn(crate::cursor::Cursor<'s>) -> PResult<'
 #[macro_export]
 macro_rules! Parser {
     ($lt:lifetime, $out:ty) => {
-        impl Fn(crate::cursor::Cursor<$lt>) -> crate::types::PResult<$lt, $out>
+        impl Fn($crate::cursor::Cursor<$lt>) -> $crate::types::PResult<$lt, $out>
     };
 }

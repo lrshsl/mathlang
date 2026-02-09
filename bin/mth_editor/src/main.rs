@@ -24,7 +24,7 @@ pub struct MainState {
 impl MainState {
     pub fn new() -> Self {
         let mut s = Self {
-            text: text_editor::Content::with_text("f x -> sin x;\nplot f;"),
+            text: text_editor::Content::with_text("f(x) = sin(x);\nplot(f);"),
             graph: Graph::default(),
             err_msg: None,
         };

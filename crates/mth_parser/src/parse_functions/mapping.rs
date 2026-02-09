@@ -1,22 +1,32 @@
+use parser_lib::Parser;
+
 use super::*;
 
-// pub struct Mapping<'s> {
-//     pub name: &'s str,
-//     pub params: Vec<Param<'s>>,
-//     pub body: Expr<'s>,
-// }
-
-// pub struct Param<'s>(pub &'s str);
-
+/// fn_def
+///     : ident '(' (ident ',')* ident? ')' '=' expr
+///     ;
 pub fn parse_mapping(src: Cursor) -> PResult<Mapping> {
+    // Name
     let (src, name) = parse!(tok(ident), "Could not parse mapping name", src)?;
-    let (src, params) = parse!(many0(parse_param), "Could not parse params", src)?;
-    let (src, _) = parse!(tok(keyword("->")), "Could not find '->'", src)?;
+
+    // Params
+    let (src, _) = parse!(tok(chr('(')), "Expected '(' in function declaration", src)?;
+    let (src, params) = parse!(
+        delimited1(parse_param(), tok(chr(','))),
+        "Could not parse params",
+        src
+    )?;
+    let (src, _) = parse!(tok(chr(')')), "Expected ')' in function declaration", src)?;
+
+    // '='
+    let (src, _) = parse!(tok(chr('=')), "Expected '=' in function declaration", src)?;
+
+    // Body
     let (src, body) = expr(src)?;
+
     Ok((src, Mapping { name, params, body }))
 }
 
-pub fn parse_param(src: Cursor) -> PResult<Param> {
-    let (src, name) = parse!(tok(ident), "Could not parse param name", src)?;
-    Ok((src, Param(name)))
+pub fn parse_param<'s>() -> Parser!['s, Param] {
+    pmap(tok(ident), |s| Param(s))
 }
