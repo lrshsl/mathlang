@@ -22,6 +22,7 @@ pub fn compile_module(module: &Module) -> Result<Vec<Instruction>, ()> {
                 let Some(mapping) = ctx.get(f) else {
                     panic!("Could not resolve function `{f:?}`");
                 };
+
                 return compile_fn(mapping);
             }
             _ => return Err(()),
@@ -62,6 +63,7 @@ pub fn compile_s_expr(s_expr: &FunctionCall) -> Result<Vec<Instruction>, ()> {
         "__builtin__sub" => compile_binary_op(s_expr, OP_SUB),
         "__builtin__mul" => compile_binary_op(s_expr, OP_MUL),
         "__builtin__div" => compile_binary_op(s_expr, OP_DIV),
+        "__builtin__eq" => compile_binary_op(s_expr, OP_EQ),
 
         // Mathematical functions
         "sin" | "cos" | "tan" | "log" => {
@@ -103,6 +105,13 @@ pub fn compile_s_expr(s_expr: &FunctionCall) -> Result<Vec<Instruction>, ()> {
                 return Err(());
             }
             Ok(vec![inst!(OP_X)])
+        }
+
+        "y" => {
+            if s_expr.args.len() != 0 {
+                return Err(());
+            }
+            Ok(vec![inst!(OP_Y)])
         }
 
         // Unknown function

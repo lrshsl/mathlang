@@ -1,4 +1,4 @@
-use parser_lib::{combinators::preceded, types::BoxedParser};
+use parser_lib::{combinators::preceded, primitives::keyword, types::BoxedParser};
 
 use super::*;
 
@@ -46,20 +46,24 @@ fn parse_comma_separated_args(src: Cursor) -> PResult<Vec<Expr>> {
 }
 
 pub fn function_call_builtin_math(src: Cursor) -> PResult<FunctionCall> {
-    let ops = "+-*/"
-        .chars()
-        .map(|op| Box::new(tok(chr(op))) as BoxedParser<'_, char>)
+    let (src, lhs) = parse!(primary, "Could not parse lhs expr", src)?;
+
+    // Fall back to original single-character operators
+    let ops = ["+", "-", "*", "/", "^", "=="]
+        .into_iter()
+        .map(|op| Box::new(tok(keyword(op))) as BoxedParser<'_, &str>)
         .collect::<Vec<_>>();
 
-    let (src, lhs) = parse!(primary, "Could not parse lhs expr", src)?;
     let (src, op) = parse!(choice_f(ops), "Could not parse operator expr", src)?;
     let (src, rhs) = parse!(primary, "Could not parse rhs expr", src)?;
 
     let name = match op {
-        '+' => "__builtin__add",
-        '-' => "__builtin__sub",
-        '*' => "__builtin__mul",
-        '/' => "__builtin__div",
+        "+" => "__builtin__add",
+        "-" => "__builtin__sub",
+        "*" => "__builtin__mul",
+        "/" => "__builtin__div",
+        "^" => "pow",
+        "==" => "__builtin__eq",
         _ => unreachable!("Should cover all possible ops"),
     };
 

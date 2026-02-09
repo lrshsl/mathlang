@@ -20,6 +20,8 @@ const OP_COS: u32 = 6;
 const OP_SIN: u32 = 7;
 const OP_TAN: u32 = 8;
 const OP_LOG: u32 = 9;
+const OP_EQ: u32 = 12;
+const OP_Y: u32 = 13;
 
 struct Uniforms {
     viewport_origin: vec2f,
@@ -52,6 +54,38 @@ fn vs_main(in: VertexIn) -> VertexOut {
     return VertexOut(position);
 }
 
+// Helper function to check if instructions contain equality operations
+fn is_boolean_condition() -> bool {
+    for (var i: u32 = 0u; i < u.instruction_count; i = i + 1u) {
+        if (instructions[i].opcode == OP_EQ) {
+            return true;
+        }
+    }
+    return false;
+}
+
+// Helper function for traditional curve rendering
+fn render_curve(x: f32, y: f32, d: f32) -> vec4f {
+    let curve_y = eval_function(x, 0.0); // y coordinate not used for 1D functions
+
+    // Calculate distance from curve //
+
+    // Central difference (+dx -dx) for more precision
+    let dx = 0.001 * max(1.0, x);
+    let dy = (eval_function(x + dx, 0.0) - eval_function(x - dx, 0.0)) / (2.0 * dx);
+    
+    // Vertical distance to the curve
+    let vertical_dist = y - curve_y;
+
+    // Normalize
+    // We divide by length of gradient vector vec2f(1.0, dy)
+    // This turns vertical distance into perpendicular distance
+    let dist = abs(vertical_dist) / sqrt(1.0 + dy * dy);
+
+    // Return WHITE if dist < d, else BLACK
+    return vec4f(vec3f(step(dist, d)), 1.0);
+}
+
 @fragment
 fn fs_main(in: VertexOut) -> @location(0) vec4f {
     // ~= thickness of lines
@@ -60,6 +94,7 @@ fn fs_main(in: VertexOut) -> @location(0) vec4f {
     let local_pos = in.position.xy - u.viewport_origin;
     let scaled_pos = (local_pos - u.viewport_size * 0.5) * u.pixel_ratio;
 
+    // Draw viewport origin indicator
     if abs(scaled_pos.x) < d && abs(scaled_pos.y) < d {
         return vec4f(0.5, 0.5, 0.5, 1.);
     }
@@ -67,35 +102,21 @@ fn fs_main(in: VertexOut) -> @location(0) vec4f {
     var p = scaled_pos + u.pan_offset;
     p.y = -p.y; // invert y axis for mathematics
 
-
-    // Maths //
-    // Calculate the expected y
-    let curve_y = eval_function(p.x);
-
-    // Calculate distance from curve //
-
-    // Central difference (+dx -dx) for more precision
-    let dx = 0.001 * max(1.0, p.x);
-    let dy = (eval_function(p.x + dx) - eval_function(p.x - dx)) / (2.0 * dx);
-    
-    // Vertical distance to the curve
-    let vertical_dist = p.y - curve_y;
-
-    // Normalize
-    // We divide by the length of the gradient vector vec2f(1.0, dy)
-    // This turns vertical distance into perpendicular distance
-    let dist = abs(vertical_dist) / sqrt(1.0 + dy * dy);
-
-    if dist < d {
-        return vec4f(1., 1., 1., 1.);
-    }
-
     // x and y axis
     if abs(p.x) < d || abs(p.y) < d {
         return vec4f(0.3, 0.3, 0.3, 1.);
     }
 
-    return vec4f(0., 0., 0., 1.);
+    if (is_boolean_condition()) {
+        // Boolean condition rendering
+        let result = eval_function(p.x, p.y);
+
+        // Return WHITE if 0.5 > result, else BLACK
+        return vec4f(vec3f(step(0.5, result)), 1.0);
+    }
+
+    // Traditional curve rendering
+    return render_curve(p.x, p.y, d);
 }
 
 fn spow(a: f32, b: f32) -> f32 {
@@ -110,71 +131,85 @@ fn spow(a: f32, b: f32) -> f32 {
     }
 }
 
-// Interprets a mathematical operation on the GPU
-fn eval_function(x: f32) -> f32 {
+// Extracted function to handle individual instruction execution
+fn execute_instruction(op: Instruction, x: f32, y: f32, sp: ptr<function, u32>, stack: ptr<function, array<f32, 16>>) {
+    switch op.opcode {
+        case OP_CONST: { // => a
+            stack[*sp] = op.a;
+            *sp = *sp + 1u;
+        }
+        case OP_X: { // => x
+            stack[*sp] = x;
+            *sp = *sp + 1u;
+        }
+        case OP_Y: { // => y
+            stack[*sp] = y;
+            *sp = *sp + 1u;
+        }
+        case OP_X_POLY: { // => a * (x**b)
+            stack[*sp] = op.a * spow(x, op.b);
+            *sp = *sp + 1u;
+        }
+        case OP_ADD: { // stack[-2] += stack[-1]
+            let b = stack[*sp - 1u];
+            *sp = *sp - 1u;
+            let a = stack[*sp - 1u];
+            stack[*sp - 1u] = a + b;
+        }
+        case OP_SUB: { // stack[-2] -= stack[-1]
+            let b = stack[*sp - 1u];
+            *sp = *sp - 1u;
+            let a = stack[*sp - 1u];
+            stack[*sp - 1u] = a - b;
+        }
+        case OP_MUL: { // stack[-2] *= stack[-1]
+            let b = stack[*sp - 1u];
+            *sp = *sp - 1u;
+            let a = stack[*sp - 1u];
+            stack[*sp - 1u] = a * b;
+        }
+        case OP_DIV: { // stack[-2] /= stack[-1]
+            let b = stack[*sp - 1u];
+            *sp = *sp - 1u;
+            let a = stack[*sp - 1u];
+            stack[*sp - 1u] = a / b;
+        }
+        case OP_POW: { // stack[-2] **= stack[-1]
+            let b = stack[*sp - 1u];
+            *sp = *sp - 1u;
+            let a = stack[*sp - 1u];
+            stack[*sp - 1u] = spow(a, b);
+        }
+        case OP_COS: { // cos(stack[-1])
+            stack[*sp - 1u] = cos(stack[*sp - 1u]);
+        }
+        case OP_SIN: { // sin(stack[-1])
+            stack[*sp - 1u] = sin(stack[*sp - 1u]);
+        }
+        case OP_TAN: { // tan(stack[-1])
+            stack[*sp - 1u] = tan(stack[*sp - 1u]);
+        }
+        case OP_LOG: { // log(stack[-1])
+            stack[*sp - 1u] = log(stack[*sp - 1u]);
+        }
+        case OP_EQ: { // stack[-2] == stack[-1] ? 1.0 : 0.0
+            let b = stack[*sp - 1u];
+            *sp = *sp - 1u;
+            let a = stack[*sp - 1u];
+            stack[*sp - 1u] = step(abs(a - b), 0.001);
+        }
+        default: {}
+    }
+}
+
+// Unified function for both 1D and 2D evaluation
+fn eval_function(x: f32, y: f32) -> f32 {
     var stack: array<f32, 16>; // simple fixed-size stack
     var sp: u32 = 0;
 
     for (var i: u32 = 0u; i < u.instruction_count; i = i + 1u) {
         let op = instructions[i];
-
-        switch op.opcode {
-        case OP_CONST: { // => a
-            stack[sp] = op.a;
-            sp = sp + 1u;
-        }
-        case OP_X: { // => x
-            stack[sp] = x;
-            sp = sp + 1u;
-        }
-        case OP_X_POLY: { // => a * (x**b)
-            stack[sp] = op.a * spow(x, op.b);
-            sp = sp + 1u;
-        }
-        case OP_ADD: { // stack[-2] += stack[-1]
-            let b = stack[sp - 1u];
-            sp = sp - 1u;
-            let a = stack[sp - 1u];
-            stack[sp - 1u] = a + b;
-        }
-        case OP_SUB: { // stack[-2] -= stack[-1]
-            let b = stack[sp - 1u];
-            sp = sp - 1u;
-            let a = stack[sp - 1u];
-            stack[sp - 1u] = a - b;
-        }
-        case OP_MUL: { // stack[-2] *= stack[-1]
-            let b = stack[sp - 1u];
-            sp = sp - 1u;
-            let a = stack[sp - 1u];
-            stack[sp - 1u] = a * b;
-        }
-        case OP_DIV: { // stack[-2] /= stack[-1]
-            let b = stack[sp - 1u];
-            sp = sp - 1u;
-            let a = stack[sp - 1u];
-            stack[sp - 1u] = a / b;
-        }
-        case OP_POW: { // stack[-2] **= stack[-1]
-            let b = stack[sp - 1u];
-            sp = sp - 1u;
-            let a = stack[sp - 1u];
-            stack[sp - 1u] = pow(a, b);
-        }
-        case OP_COS: { // cos(stack[-1])
-            stack[sp - 1u] = cos(stack[sp - 1u]);
-        }
-        case OP_SIN: { // sin(stack[-1])
-            stack[sp - 1u] = sin(stack[sp - 1u]);
-        }
-        case OP_TAN: { // tan(stack[-1])
-            stack[sp - 1u] = tan(stack[sp - 1u]);
-        }
-        case OP_LOG: { // log(stack[-1])
-            stack[sp - 1u] = log(stack[sp - 1u]);
-        }
-        default: {}
-        }
+        execute_instruction(op, x, y, &sp, &stack);
     }
     return stack[0];
 }

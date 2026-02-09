@@ -48,7 +48,7 @@ pub fn chr<'s>(expected: char) -> Parser!['s, char] {
     }
 }
 
-pub fn keyword<'s>(expected: &'s str) -> Parser!['_, ()] {
+pub fn keyword<'s>(expected: &'s str) -> Parser!['s, &'s str] {
     move |src| {
         let mut src = src;
         for ch in expected.chars() {
@@ -63,7 +63,7 @@ pub fn keyword<'s>(expected: &'s str) -> Parser!['_, ()] {
             };
             src = new_src
         }
-        Ok((src, ()))
+        Ok((src, expected))
     }
 }
 
