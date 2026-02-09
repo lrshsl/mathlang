@@ -20,11 +20,11 @@ pub use expr::{expr, primary};
 mod type_decl;
 pub use type_decl::parse_type_decl;
 
-mod mapping;
-pub use mapping::parse_mapping;
+mod fn_decl;
+pub use fn_decl::parse_fn_decl;
 
-mod s_expr;
-pub use s_expr::parse_function_call;
+mod fn_call;
+pub use fn_call::parse_fn_call;
 
 mod literal;
 pub use literal::literal;

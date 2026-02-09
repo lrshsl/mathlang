@@ -1,6 +1,6 @@
 use parser_lib::{cursor::Cursor, parse, pmatch, types::PResult};
 
-use crate::parse_functions::s_expr::{function_call_builtin_math, parse_function_call};
+use crate::parse_functions::fn_call::{parse_builtin_binop, parse_fn_call};
 
 use super::*;
 
@@ -36,7 +36,7 @@ pub fn expr(src: Cursor) -> PResult<Expr> {
     // Ok((src, bin))
     // } else
     pmatch! {src; err = "[parse_expr] Could not match any subparser, tried `expr <op> expr`, `function_call_builtin_math` and `primary`";
-        function_call_builtin_math, x => Expr::FunctionCall(x);
+        parse_builtin_binop, x => Expr::FunctionCall(x);
         primary, x => x;
     }
 }
@@ -48,7 +48,7 @@ pub fn expr(src: Cursor) -> PResult<Expr> {
 pub fn primary(src: Cursor) -> PResult<Expr> {
     pmatch! {src; err = "[parse_primary] Could not match any subparser";
         literal, x => Expr::Literal(x);
-        parse_function_call, x => Expr::FunctionCall(x);
+        parse_fn_call, x => Expr::FunctionCall(x);
         tok(ident), x => varref(x);
         between(expr, tok(chr('(')), tok(chr(')'))), x => x;
     }

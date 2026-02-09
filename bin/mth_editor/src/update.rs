@@ -25,7 +25,7 @@ impl MainState {
     pub fn on_text_change(&mut self) {
         let text = &self.text.text();
         match mth_parser::parse_program(&text) {
-            Ok((_rem, module)) => {
+            Ok((rem, module)) if rem.remainder.is_empty() => {
                 match code_generator::compile_module(&module) {
                     Ok(instructions) => {
                         let len = instructions.len();
@@ -50,6 +50,10 @@ impl MainState {
                 }
             }
             Err(e) => self.update(Message::SetError(format!("{e}"))),
+            Ok((rem, _)) => self.update(Message::SetError(format!(
+                "Couldn't parse everything. Unparsed input: {}",
+                rem.remainder
+            ))),
         }
     }
 }

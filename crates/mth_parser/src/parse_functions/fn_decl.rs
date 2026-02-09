@@ -5,7 +5,7 @@ use super::*;
 /// fn_def
 ///     : ident '(' (ident ',')* ident? ')' '=' expr
 ///     ;
-pub fn parse_mapping(src: Cursor) -> PResult<Mapping> {
+pub fn parse_fn_decl(src: Cursor) -> PResult<Mapping> {
     // Name
     let (src, name) = parse!(tok(ident), "Could not parse mapping name", src)?;
 

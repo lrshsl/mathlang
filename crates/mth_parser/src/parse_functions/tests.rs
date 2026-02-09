@@ -40,7 +40,7 @@ fn parse_expr_application() {
 #[test]
 fn parse_mapping_no_params() {
     assert_parses(
-        parse_mapping,
+        parse_fn_decl,
         "a -> 1",
         Mapping {
             name: "a",
@@ -54,7 +54,7 @@ fn parse_mapping_no_params() {
 #[test]
 fn parse_mapping_with_params() {
     assert_parses(
-        parse_mapping,
+        parse_fn_decl,
         "add x y -> (x + y)",
         Mapping {
             name: "add",
