@@ -57,15 +57,14 @@ fn vs_main(in: VertexIn) -> VertexOut {
 // Helper function to check if instructions contain equality operations
 fn is_boolean_condition() -> bool {
     for (var i: u32 = 0u; i < u.instruction_count; i = i + 1u) {
-        if (instructions[i].opcode == OP_EQ) {
+        if instructions[i].opcode == OP_EQ {
             return true;
         }
     }
     return false;
 }
 
-// Helper function for traditional curve rendering
-fn render_curve(x: f32, y: f32, d: f32) -> vec4f {
+fn is_on_curve(x: f32, y: f32, d: f32) -> bool {
     let curve_y = eval_function(x, 0.0); // y coordinate not used for 1D functions
 
     // Calculate distance from curve //
@@ -82,8 +81,7 @@ fn render_curve(x: f32, y: f32, d: f32) -> vec4f {
     // This turns vertical distance into perpendicular distance
     let dist = abs(vertical_dist) / sqrt(1.0 + dy * dy);
 
-    // Return WHITE if dist < d, else BLACK
-    return vec4f(vec3f(step(dist, d)), 1.0);
+    return dist < d;
 }
 
 @fragment
@@ -102,33 +100,37 @@ fn fs_main(in: VertexOut) -> @location(0) vec4f {
     var p = scaled_pos + u.pan_offset;
     p.y = -p.y; // invert y axis for mathematics
 
-    // x and y axis
-    if abs(p.x) < d || abs(p.y) < d {
-        return vec4f(0.3, 0.3, 0.3, 1.);
-    }
+    // Draw function
+    var color = 0.0;
+    if is_boolean_condition() {
 
-    if (is_boolean_condition()) {
         // Boolean condition rendering
-        let result = eval_function(p.x, p.y);
+        color = eval_function(p.x, p.y);
 
-        // Return WHITE if 0.5 > result, else BLACK
-        return vec4f(vec3f(step(0.5, result)), 1.0);
+    } else if is_on_curve(p.x, p.y, d) {
+
+        // Traditional curve rendering
+        color = 1.0;
+
+    } else if abs(p.x) < d || abs(p.y) < d {
+
+        // x and y axis
+        color = 0.3;
     }
 
-    // Traditional curve rendering
-    return render_curve(p.x, p.y, d);
+    return vec4f(color, color, color, 1.0);
 }
 
 fn spow(a: f32, b: f32) -> f32 {
-    if (a >= 0.0) {
+    if a >= 0.0 {
         return pow(a, b);
-    } else {
-        let abs_pow = pow(-a, b);
-
-        // If y is even, result is positive; else negative
-        let b_is_even = fract(b * 0.5) == 0.0;
-        return select(-abs_pow, abs_pow, b_is_even);
     }
+
+    let abs_pow = pow(-a, b);
+
+    // If y is even, result is positive; else negative
+    let b_is_even = fract(b * 0.5) == 0.0;
+    return select(-abs_pow, abs_pow, b_is_even);
 }
 
 // Extracted function to handle individual instruction execution
