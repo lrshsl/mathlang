@@ -1,16 +1,13 @@
-use crate::{
-    Parser,
-    types::{BoxedParser, PError},
-};
+use crate::types::{BoxedParser, PError, Parser};
 
-pub fn or<'s, T>(p1: Parser!['s, T], p2: Parser!['s, T]) -> Parser!['s, T] {
+pub fn or<'s, T>(p1: impl Parser<'s, T>, p2: impl Parser<'s, T>) -> impl Parser<'s, T> {
     move |src| match p1(src.clone()) {
         Ok(val) => Ok(val),
         Err(_) => p2(src),
     }
 }
 
-pub fn preceded<'s, T, D>(p1: Parser!['s, T], p2: Parser!['s, D]) -> Parser!['s, T] {
+pub fn preceded<'s, T, D>(p1: impl Parser<'s, T>, p2: impl Parser<'s, D>) -> impl Parser<'s, T> {
     move |src| {
         let (src, _) = p2(src.clone())?;
         let (src, v) = p1(src.clone())?;
@@ -18,7 +15,7 @@ pub fn preceded<'s, T, D>(p1: Parser!['s, T], p2: Parser!['s, D]) -> Parser!['s,
     }
 }
 
-pub fn terminated<'s, T, D>(p1: Parser!['s, T], p2: Parser!['s, D]) -> Parser!['s, T] {
+pub fn terminated<'s, T, D>(p1: impl Parser<'s, T>, p2: impl Parser<'s, D>) -> impl Parser<'s, T> {
     move |src| {
         let (src, v) = p1(src)?;
         let (src, _) = p2(src)?;
@@ -27,10 +24,10 @@ pub fn terminated<'s, T, D>(p1: Parser!['s, T], p2: Parser!['s, D]) -> Parser!['
 }
 
 pub fn between<'s, T, D1, D2>(
-    p: Parser!['s, T],
-    d1: Parser!['s, D1],
-    d2: Parser!['s, D2],
-) -> Parser!['s, T] {
+    p: impl Parser<'s, T>,
+    d1: impl Parser<'s, D1>,
+    d2: impl Parser<'s, D2>,
+) -> impl Parser<'s, T> {
     move |src| {
         let (src, _) = d1(src)?;
         let (src, v) = p(src)?;
@@ -39,7 +36,7 @@ pub fn between<'s, T, D1, D2>(
     }
 }
 
-pub fn choice_f<'s, T>(parsers: Vec<BoxedParser<'s, T>>) -> Parser!['s, T] {
+pub fn choice_f<'s, T>(parsers: Vec<BoxedParser<'s, T>>) -> impl Parser<'s, T> {
     move |src| {
         let mut last_err = None;
 
@@ -68,7 +65,7 @@ macro_rules! choice {
     };
 }
 
-pub fn many0<'s, T>(p: Parser!['s, T]) -> Parser!['s, Vec<T>] {
+pub fn many0<'s, T>(p: impl Parser<'s, T>) -> impl Parser<'s, Vec<T>> {
     move |mut src| {
         let mut out = Vec::new();
         loop {
@@ -88,7 +85,7 @@ pub fn many0<'s, T>(p: Parser!['s, T]) -> Parser!['s, Vec<T>] {
     }
 }
 
-pub fn some<'s, T>(p: Parser!['s, T]) -> Parser!['s, Vec<T>] {
+pub fn some<'s, T>(p: impl Parser<'s, T>) -> impl Parser<'s, Vec<T>> {
     move |src| {
         // Try the first element
         let (mut src, first) = p(src.clone()).map_err(|_| PError {
@@ -115,7 +112,10 @@ pub fn some<'s, T>(p: Parser!['s, T]) -> Parser!['s, Vec<T>] {
     }
 }
 
-pub fn then_append<'s, T>(ps: Parser!['s, Vec<T>], p: Parser!['s, T]) -> Parser!['s, Vec<T>] {
+pub fn then_append<'s, T>(
+    ps: impl Parser<'s, Vec<T>>,
+    p: impl Parser<'s, T>,
+) -> impl Parser<'s, Vec<T>> {
     move |src| {
         let (src, mut xs) = ps(src)?;
         let (src, x) = p(src)?;
@@ -136,6 +136,9 @@ pub fn then_append<'s, T>(ps: Parser!['s, Vec<T>], p: Parser!['s, T]) -> Parser!
 /// let (_, result) = delimited1(tok(ident), tok(chr(',')))(src).unwrap();
 /// assert_eq!(result, vec!["a", "b", "c"])
 /// ```
-pub fn delimited1<'s, T, Del>(p: Parser!['s, T], del: Parser!['s, Del]) -> Parser!['s, Vec<T>] {
+pub fn delimited1<'s, T, Del>(
+    p: impl Parser<'s, T>,
+    del: impl Parser<'s, Del>,
+) -> impl Parser<'s, Vec<T>> {
     move |src| then_append(many0(terminated(&p, &del)), &p)(src)
 }

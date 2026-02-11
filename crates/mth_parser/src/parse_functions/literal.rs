@@ -59,10 +59,8 @@ fn float(src: Cursor) -> PResult<f64> {
 
     // Optional exponent part
     let src_after_exp = src.clone();
-    if let Ok((src_e, _)) =
-        chr('e')(src_after_exp.clone()).or_else(|_| chr('E')(src_after_exp.clone()))
-    {
-        let (src_e, sign) = optional(choice!(chr('+'), chr('-')))(src_e)?;
+    if let Ok((src_e, _)) = or(chr('e'), chr('E'))(src_after_exp) {
+        let (src_e, sign) = optional(or(chr('+'), chr('-')))(src_e)?;
         let (src_e, exp_digits) = some(digit(10))(src_e)?;
 
         s.push('e');

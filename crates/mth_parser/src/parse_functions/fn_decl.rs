@@ -1,4 +1,4 @@
-use parser_lib::Parser;
+use parser_lib::types::Parser;
 
 use super::*;
 
@@ -27,6 +27,6 @@ pub fn parse_fn_decl(src: Cursor) -> PResult<Mapping> {
     Ok((src, Mapping { name, params, body }))
 }
 
-pub fn parse_param<'s>() -> Parser!['s, Param] {
+pub fn parse_param<'s>() -> impl Parser<'s, Param<'s>> {
     pmap(tok(ident), |s| Param(s))
 }

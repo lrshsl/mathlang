@@ -30,6 +30,8 @@ impl MainState {
         match mth_parser::parse_program(&text) {
             // Ok
             Ok((rem, module)) if rem.remainder.is_empty() => {
+                println!("{module:#?}");
+
                 // Codegen
                 match code_generator::compile_module(&module) {
 

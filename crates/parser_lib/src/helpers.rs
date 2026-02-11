@@ -1,8 +1,7 @@
 use crate::{
-    Parser,
     cursor::Cursor,
     primitives::satisfy,
-    types::{PError, PResult},
+    types::{PError, PResult, Parser},
 };
 
 #[macro_export]
@@ -74,14 +73,14 @@ pub fn whitespace<'s>(mut src: Cursor<'s>) -> PResult<'s, ()> {
     Ok((src, ()))
 }
 
-pub fn tok<'s, O>(f: Parser!['s, O]) -> Parser!['s, O] {
+pub fn tok<'s, O>(f: impl Parser<'s, O>) -> impl Parser<'s, O> {
     move |src| {
         let (src, ()) = whitespace(src).expect("Always succeeds");
         f(src)
     }
 }
 
-pub fn digit<'s>(radix: u32) -> Parser!['s, char] {
+pub fn digit<'s>(radix: u32) -> impl Parser<'s, char> {
     satisfy(move |ch| char::is_digit(ch, radix))
 }
 

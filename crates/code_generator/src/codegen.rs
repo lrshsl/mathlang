@@ -59,11 +59,12 @@ pub fn compile_literal(lit: &Literal) -> Result<Vec<Instruction>, ()> {
 pub fn compile_s_expr(s_expr: &FunctionCall) -> Result<Vec<Instruction>, ()> {
     match s_expr.name {
         // Built-in arithmetic operations
-        "__builtin__add" => compile_binary_op(s_expr, OP_ADD),
-        "__builtin__sub" => compile_binary_op(s_expr, OP_SUB),
-        "__builtin__mul" => compile_binary_op(s_expr, OP_MUL),
-        "__builtin__div" => compile_binary_op(s_expr, OP_DIV),
-        "__builtin__eq" => compile_binary_op(s_expr, OP_EQ),
+        "+" => compile_binary_op(s_expr, OP_ADD),
+        "-" => compile_binary_op(s_expr, OP_SUB),
+        "*" => compile_binary_op(s_expr, OP_MUL),
+        "/" => compile_binary_op(s_expr, OP_DIV),
+        "^" => compile_binary_op(s_expr, OP_POW),
+        "==" => compile_binary_op(s_expr, OP_EQ),
 
         // Mathematical functions
         "sin" | "cos" | "tan" | "log" => {
@@ -79,17 +80,6 @@ pub fn compile_s_expr(s_expr: &FunctionCall) -> Result<Vec<Instruction>, ()> {
                 _ => return Err(()),
             };
             instructions.push(inst!(opcode));
-            Ok(instructions)
-        }
-
-        // Power function
-        "pow" => {
-            if s_expr.args.len() != 2 {
-                return Err(());
-            }
-            let mut instructions = compile_expr(&s_expr.args[0])?;
-            instructions.extend(compile_expr(&s_expr.args[1])?);
-            instructions.push(inst!(OP_POW));
             Ok(instructions)
         }
 
@@ -120,11 +110,18 @@ pub fn compile_s_expr(s_expr: &FunctionCall) -> Result<Vec<Instruction>, ()> {
 }
 
 pub fn compile_binary_op(s_expr: &FunctionCall, opcode: u32) -> Result<Vec<Instruction>, ()> {
-    if s_expr.args.len() != 2 {
+    if s_expr.args.len() < 2 {
         return Err(());
     }
+
     let mut instructions = compile_expr(&s_expr.args[0])?;
-    instructions.extend(compile_expr(&s_expr.args[1])?);
-    instructions.push(inst!(opcode));
-    Ok(instructions)
+    for arg in s_expr.args[1..].iter() {
+        let inst = compile_expr(arg)?;
+
+        instructions.reserve(inst.len() + 1);
+        instructions.extend(inst);
+        instructions.push(inst![opcode])
+    }
+
+    Ok(instructions.to_vec())
 }

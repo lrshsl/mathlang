@@ -47,11 +47,10 @@ impl std::fmt::Display for PError {
 
 pub type PResult<'s, O> = Result<(Cursor<'s>, O), PError>;
 
-pub type BoxedParser<'s, T> = Box<dyn Fn(crate::cursor::Cursor<'s>) -> PResult<'s, T> + 's>;
+pub type BoxedParser<'s, T> = Box<dyn Parser<'s, T>>;
 
-#[macro_export]
-macro_rules! Parser {
-    ($lt:lifetime, $out:ty) => {
-        impl Fn($crate::cursor::Cursor<$lt>) -> $crate::types::PResult<$lt, $out>
-    };
-}
+// Parser trait
+pub trait Parser<'s, T>: Fn(Cursor<'s>) -> PResult<'s, T> {}
+
+// Blanket impl for all Fn(Cursor) -> PResult<T>
+impl<'s, F, T> Parser<'s, T> for F where F: Fn(Cursor<'s>) -> PResult<'s, T> {}

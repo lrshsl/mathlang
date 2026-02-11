@@ -1,46 +1,56 @@
-use parser_lib::types::BoxedParser;
+use parser_lib::{
+    choice,
+    types::{BoxedParser, Parser},
+};
 
 use super::*;
 
 pub fn parse_fn_call(src: Cursor) -> PResult<FunctionCall> {
     let parse_args = delimited1(tok(expr), tok(chr(',')));
 
-    let (src, name) = parse!(tok(ident), "Could not parse function name", src)?;
+    let (src, name) = parse!(tok(ident), "Couldn't parse function name", src)?;
     let (src, _) = parse!(tok(chr('(')), "Expected '(' after function name", src)?;
 
     // Parse comma-separated arguments
-    let (src, args) = parse!(parse_args, "Could not parse function arguments", src)?;
+    let (src, args) = parse!(parse_args, "Couldn't parse function arguments", src)?;
 
     let (src, _) = parse!(tok(chr(')')), "Expected ')' after function arguments", src)?;
 
     Ok((src, FunctionCall { name, args }))
 }
 
+pub fn parse_s_expr(src: Cursor) -> PResult<FunctionCall> {
+    let ident_or_symbol = or(parse_op(), ident);
+    let (src, name) = parse!(tok(ident_or_symbol), "Couldn't parse s_expr name", src)?;
+    let (src, args) = parse!(some(primary), "Couldn't parse argument", src)?;
+
+    Ok((src, FunctionCall { name, args }))
+}
+
+fn parse_op<'s>() -> impl Parser<'s, &'s str> {
+    preceded(
+        choice!(
+            keyword("+"),
+            keyword("-"),
+            keyword("*"),
+            keyword("/"),
+            keyword("^"),
+            keyword("==")
+        ),
+        whitespace,
+    )
+}
+
 pub fn parse_builtin_binop(src: Cursor) -> PResult<FunctionCall> {
-    let (src, lhs) = parse!(primary, "Could not parse lhs expr", src)?;
+    let (src, lhs) = parse!(primary, "Couldn't parse lhs expr", src)?;
 
-    let ops = ["+", "-", "*", "/", "^", "=="]
-        .into_iter()
-        .map(|op| Box::new(tok(keyword(op))) as BoxedParser<'_, &str>)
-        .collect::<Vec<_>>();
-
-    let (src, op) = parse!(choice_f(ops), "Could not parse operator expr", src)?;
-    let (src, rhs) = parse!(primary, "Could not parse rhs expr", src)?;
-
-    let name = match op {
-        "+" => "__builtin__add",
-        "-" => "__builtin__sub",
-        "*" => "__builtin__mul",
-        "/" => "__builtin__div",
-        "^" => "pow",
-        "==" => "__builtin__eq",
-        _ => unreachable!("Should cover all possible ops"),
-    };
+    let (src, op) = parse!(parse_op(), "Couldn't parse operator expr", src)?;
+    let (src, rhs) = parse!(primary, "Couldn't parse rhs expr", src)?;
 
     Ok((
         src,
         FunctionCall {
-            name,
+            name: op,
             args: vec![lhs, rhs],
         },
     ))

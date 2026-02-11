@@ -41,7 +41,7 @@ fn parse_expr_application() {
 fn parse_mapping_no_params() {
     assert_parses(
         parse_fn_decl,
-        "a -> 1",
+        "a = 1",
         Mapping {
             name: "a",
             params: vec![],
@@ -55,11 +55,11 @@ fn parse_mapping_no_params() {
 fn parse_mapping_with_params() {
     assert_parses(
         parse_fn_decl,
-        "add x y -> (x + y)",
+        "add(x, y) = (x + y)",
         Mapping {
             name: "add",
             params: vec![Param("x".into()), Param("y".into())],
-            body: function_call("__builtin__add", vec![varref("x"), varref("y")]),
+            body: function_call("+", vec![varref("x"), varref("y")]),
         },
         "",
     );
@@ -107,8 +107,8 @@ fn parse_top_level_expr() {
 #[test]
 fn parse_module_simple() {
     let src = r#"
-        a -> 1;
-        b -> 2;
+        a = 1;
+        b = 2;
     "#;
 
     let (_, module) = parse_module(Cursor::new(src)).unwrap();

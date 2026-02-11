@@ -1,6 +1,6 @@
 use parser_lib::{cursor::Cursor, parse, pmatch, types::PResult};
 
-use crate::parse_functions::fn_call::{parse_builtin_binop, parse_fn_call};
+use crate::parse_functions::fn_call::{parse_builtin_binop, parse_fn_call, parse_s_expr};
 
 use super::*;
 
@@ -27,16 +27,14 @@ fn parse_expr_list<'s>(mut src: Cursor<'s>) -> PResult<'s, Vec<Expr<'s>>> {
 
 /// expr
 ///     : expr op=Operator expr
-///     | functionCall
+///     | op=Operator expr+
 ///     | primary
 ///     ;
 ///
 pub fn expr(src: Cursor) -> PResult<Expr> {
-    // if let Ok((src, bin)) = parse_binary_expr(src.clone()) {
-    // Ok((src, bin))
-    // } else
-    pmatch! {src; err = "[parse_expr] Could not match any subparser, tried `expr <op> expr`, `function_call_builtin_math` and `primary`";
+    pmatch! {src; err = "[parse_expr] Couldn't match any subparser, tried `expr <op> expr`, `function_call_builtin_math` and `primary`";
         parse_builtin_binop, x => Expr::FunctionCall(x);
+        parse_s_expr, x => Expr::FunctionCall(x);
         primary, x => x;
     }
 }
@@ -46,7 +44,7 @@ pub fn expr(src: Cursor) -> PResult<Expr> {
 ///     | IDENT
 ///     | '(' expr ')'
 pub fn primary(src: Cursor) -> PResult<Expr> {
-    pmatch! {src; err = "[parse_primary] Could not match any subparser";
+    pmatch! {src; err = "[parse_primary] Couldn't match any subparser";
         literal, x => Expr::Literal(x);
         parse_fn_call, x => Expr::FunctionCall(x);
         tok(ident), x => varref(x);

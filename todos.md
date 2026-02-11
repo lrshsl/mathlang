@@ -26,7 +26,3 @@
 - Graph analysis tools
 
 
-## Maybe
-
-- syntax for `pow`?
-

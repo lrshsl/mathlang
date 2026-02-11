@@ -26,14 +26,14 @@ pub fn parse_module(src: Cursor) -> PResult<Module> {
 #[test]
 fn golden_test_module() {
     let src = r#"
-    a -> 1;
-    b -> 2;
+    a = 1;
+    b = 2;
 
     c :: int;
-    c -> a;
+    c = a;
 
     add :: int -> int -> int;
-    add x y -> (x + y);
+    add(x, y) = (x + y);
 
     add(a, b);
     add(add(a, b), 1);
@@ -69,7 +69,7 @@ fn golden_test_module() {
                 name: "add",
                 params: vec![Param("x"), Param("y")],
                 body: Expr::FunctionCall(FunctionCall {
-                    name: "__builtin__add",
+                    name: "+",
                     args: vec![varref("x"), varref("y")],
                 }),
             }),
