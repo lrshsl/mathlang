@@ -1,10 +1,7 @@
-use parser_lib::choice;
-
 use super::*;
 
 pub fn literal(src: Cursor) -> PResult<Literal> {
     pmatch! {src; err = "[parse_literal]";
-        tok(string), x => Literal::Str(x);
         tok(boolean), x => Literal::Bool(x);
     }
     .or_else(|_| {

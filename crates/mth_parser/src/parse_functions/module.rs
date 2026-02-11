@@ -68,25 +68,13 @@ fn golden_test_module() {
             TopLevel::MapImpl(Mapping {
                 name: "add",
                 params: vec![Param("x"), Param("y")],
-                body: Expr::FunctionCall(FunctionCall {
-                    name: "+",
-                    args: vec![varref("x"), varref("y")],
-                }),
+                body: function_call("+", vec![varref("x"), varref("y")]),
             }),
-            TopLevel::Expr(Expr::FunctionCall(FunctionCall {
-                name: "add",
-                args: vec![varref("a"), varref("b")],
-            })),
-            TopLevel::Expr(Expr::FunctionCall(FunctionCall {
-                name: "add",
-                args: vec![
-                    Expr::FunctionCall(FunctionCall {
-                        name: "add",
-                        args: vec![varref("a"), varref("b")],
-                    }),
-                    int(1),
-                ],
-            })),
+            TopLevel::Expr(function_call("add", vec![varref("a"), varref("b")])),
+            TopLevel::Expr(function_call(
+                "add",
+                vec![function_call("add", vec![varref("a"), varref("b")]), int(1)],
+            )),
         ]),
     };
 

@@ -173,7 +173,9 @@ fn test_compile_mapping_with_literal() {
                 args: vec![Expr::FunctionCall(FunctionCall {
                     name: "a",
                     args: vec![],
+                    is_negated: false,
                 })],
+                is_negated: false,
             })),
         ],
     };
@@ -201,7 +203,9 @@ fn test_compile_mapping_with_expression() {
                 args: vec![Expr::FunctionCall(FunctionCall {
                     name: "a",
                     args: vec![],
+                    is_negated: false,
                 })],
+                is_negated: false,
             })),
         ],
     };

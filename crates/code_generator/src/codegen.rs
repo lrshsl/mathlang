@@ -12,7 +12,11 @@ pub fn compile_module(module: &Module) -> Result<Vec<Instruction>, ()> {
                 // Currently it is re-compiled each time it is called
                 let _ = ctx.insert(mapping.name, mapping);
             }
-            TopLevel::Expr(Expr::FunctionCall(FunctionCall { name, args })) if *name == "plot" => {
+            TopLevel::Expr(Expr::FunctionCall(FunctionCall {
+                name,
+                args,
+                is_negated,
+            })) if *name == "plot" => {
                 let Some(f) = args.get(0) else {
                     panic!("`plot` requires a function as argument");
                 };
@@ -23,7 +27,11 @@ pub fn compile_module(module: &Module) -> Result<Vec<Instruction>, ()> {
                     panic!("Could not resolve function `{f:?}`");
                 };
 
-                return compile_fn(mapping);
+                let mut instructions = compile_fn(mapping)?;
+                if *is_negated {
+                    instructions.extend([inst![OP_CONST, -1.0], inst![OP_MUL]]);
+                }
+                return Ok(instructions);
             }
             _ => return Err(()),
         }
@@ -57,7 +65,7 @@ pub fn compile_literal(lit: &Literal) -> Result<Vec<Instruction>, ()> {
 }
 
 pub fn compile_s_expr(s_expr: &FunctionCall) -> Result<Vec<Instruction>, ()> {
-    match s_expr.name {
+    let mut instructions = match s_expr.name {
         // Built-in arithmetic operations
         "+" => compile_binary_op(s_expr, OP_ADD),
         "-" => compile_binary_op(s_expr, OP_SUB),
@@ -106,22 +114,20 @@ pub fn compile_s_expr(s_expr: &FunctionCall) -> Result<Vec<Instruction>, ()> {
 
         // Unknown function
         _ => Err(()),
+    }?;
+
+    if s_expr.is_negated {
+        instructions.extend([inst![OP_CONST, -1.0], inst![OP_MUL]]);
     }
+    return Ok(instructions);
 }
 
 pub fn compile_binary_op(s_expr: &FunctionCall, opcode: u32) -> Result<Vec<Instruction>, ()> {
-    if s_expr.args.len() < 2 {
+    if s_expr.args.len() != 2 {
         return Err(());
     }
-
     let mut instructions = compile_expr(&s_expr.args[0])?;
-    for arg in s_expr.args[1..].iter() {
-        let inst = compile_expr(arg)?;
-
-        instructions.reserve(inst.len() + 1);
-        instructions.extend(inst);
-        instructions.push(inst![opcode])
-    }
-
-    Ok(instructions.to_vec())
+    instructions.extend(compile_expr(&s_expr.args[1])?);
+    instructions.push(inst!(opcode));
+    Ok(instructions)
 }

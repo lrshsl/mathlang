@@ -1,42 +1,31 @@
-use parser_lib::{cursor::Cursor, parse, pmatch, types::PResult};
+use parser_lib::{
+    cursor::Cursor,
+    pmatch,
+    types::{PResult, Parser},
+};
 
 use crate::parse_functions::fn_call::{parse_builtin_binop, parse_fn_call, parse_s_expr};
 
 use super::*;
 
-/// exprList
-///     : (expr (';' expr)* ';'?)?
-///     ;
-///
-fn parse_expr_list<'s>(mut src: Cursor<'s>) -> PResult<'s, Vec<Expr<'s>>> {
-    let mut exprs = Vec::new();
-    loop {
-        while let Ok((new_src, _)) = parse!(chr(';'), "Expected ';'", src.clone()) {
-            src = new_src;
-        }
-        let Ok((new_src, expr)) = expr(src.clone()) else {
-            // TODO
-            eprintln!("Error in [parse_expr_list], recovering");
-            break;
-        };
-        exprs.push(expr);
-        src = new_src;
-    }
-    Ok((src, exprs))
-}
-
 /// expr
 ///     : expr op=Operator expr
 ///     | op=Operator expr+
+///     | unary
 ///     | primary
 ///     ;
 ///
 pub fn expr(src: Cursor) -> PResult<Expr> {
-    pmatch! {src; err = "[parse_expr] Couldn't match any subparser, tried `expr <op> expr`, `function_call_builtin_math` and `primary`";
+    pmatch! {src; err = "[parse_expr] Couldn't match any subparser, tried `binop`, `s_expr`, `unary` and `primary`";
         parse_builtin_binop, x => Expr::FunctionCall(x);
+        unary(), x => x;
         parse_s_expr, x => Expr::FunctionCall(x);
         primary, x => x;
     }
+}
+
+fn unary<'s>() -> impl Parser<'s, Expr<'s>> {
+    pmap(preceded(primary, chr('-')), std::ops::Neg::neg)
 }
 
 /// primary

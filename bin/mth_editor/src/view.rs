@@ -1,7 +1,7 @@
 use iced::{
     Element,
     Length::{Fill, FillPortion},
-    widget::{self, column, container, row, space, text},
+    widget::{self, column, container, row},
 };
 
 use crate::{MainState, message::Message};

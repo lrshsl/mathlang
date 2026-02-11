@@ -23,11 +23,6 @@ fn parse_literal_partial() {
 }
 
 #[test]
-fn parse_literal_string() {
-    assert_parses(literal, r#""hello""#, Literal::Str("hello".into()), "");
-}
-
-#[test]
 fn parse_expr_application() {
     assert_parses(
         expr,
@@ -93,15 +88,7 @@ fn parse_type_decl_fn() {
 
 #[test]
 fn parse_top_level_expr() {
-    assert_parses(
-        parse_top_level,
-        "x();",
-        TopLevel::Expr(Expr::FunctionCall(FunctionCall {
-            name: "x",
-            args: vec![],
-        })),
-        "",
-    );
+    assert_parses(parse_top_level, "x();", TopLevel::Expr(varref("x")), "");
 }
 
 #[test]
