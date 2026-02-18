@@ -1,86 +1,66 @@
-// ANTLR 4.5.1 grammar for Mth
-//
-// Should work on http://lab.antlr.org/
+grammar mth;
 
-grammar Mth;
 
 module
-    : topLevel* EOF
-    ;
+	: toplevel* EOF
+	;
 
-topLevel
-    : typeDecl
-    | map ';'
-    | expr ';'
-    ;
+toplevel
+	: fn_decl ';'
+	| var_assign ';'
+	| expr ';'
+	;
 
-typeDecl
-    : IDENT '::' typeExpr
-    ;
+fn_decl
+	: IDENT '(' paramlist ')' '=' expr
+	;
 
-map
-    : IDENT paramList '->' expr
-    ;
+paramlist
+	: (IDENT ',')* IDENT?
+	;
 
-paramList
-    : IDENT+
-    ;
+var_assign
+	: IDENT '=' expr
+	;
 
 expr
-    : literal
-    | IDENT
-    | functionCall
-    | expr op=Operator expr
-    ;
+	// lower precedence first
 
-functionCall
-    : IDENT '(' (expr (',' expr)*)? ')'
-    ;
+	// Logical ops
+	: expr 'or' expr                                    # logical_or
+	| expr 'and' expr                                   # logical_and
+	
+	// Bitwise ops
+	| expr 'binary_or' expr                             # bitwise_or
+	| expr 'xor' expr                                   # bitwise_xor
+	| expr 'binary_and' expr                            # bitwise_and
+	
+	// Comparison ops
+	| expr ( '==' | '<' | '>' | '<=' | '>=' ) expr      # comparison
+	
+	// Arithmetic
+	| expr ( '+' | '-' ) expr                           # add_sub
+	| expr ( '*' | '/' ) expr                           # mul_div
+	| expr '^' expr                                     # power
+	
+	| primary                                           # atom
+	;
 
-literal
-    : INT
-    | STRING
-    | BOOL
-    ;
+primary
+	:'(' expr ')'
+	| fn_call
+	| IDENT
+	| INT
+	;
 
-typeExpr
-    : typeTerm ('->' typeTerm)*
-    ;
+fn_call
+	: IDENT '(' (expr ',')* expr? ')'
+	;
 
-typeTerm
-    : 'Int'
-    | 'Bool'
-    | 'String'
-    | '(' typeExpr ')'
-    ;
 
-Operator
-    : '+' | '-' | '*' | '/' | '==' | '!=' | '>' | '<'
-    ;
+INT  : [0-9]+ ;
+IDENT: [a-zA-Z_][a-zA-Z_0-9]* ;
 
-BOOL
-    : 'true'
-    | 'false'
-    ;
+WS: [ \t\n\r\f]+ -> skip ;
 
-IDENT
-    : [a-zA-Z_] [a-zA-Z0-9_]*
-    ;
-
-INT
-    : [0-9]+
-    ;
-
-STRING
-    : '"' (~["\\] | '\\' .)* '"'
-    ;
-
-WS
-    : [ \t\r\n]+ -> skip
-    ;
-
-COMMENT
-    : '|' '|'? ~[\r\n]* -> skip
-    ;
-
-# vim: ft=antlr
+// vim: et! sw=3 ts=3 sts=3
