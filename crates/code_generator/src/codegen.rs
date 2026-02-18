@@ -72,7 +72,14 @@ pub fn compile_s_expr(s_expr: &FunctionCall) -> Result<Vec<Instruction>, ()> {
         "*" => compile_binary_op(s_expr, OP_MUL),
         "/" => compile_binary_op(s_expr, OP_DIV),
         "^" => compile_binary_op(s_expr, OP_POW),
+
+        // Comparison operations
         "==" => compile_binary_op(s_expr, OP_EQ),
+        "!=" => compile_binary_op(s_expr, OP_NE),
+        "<" => compile_binary_op(s_expr, OP_LT),
+        "<=" => compile_binary_op(s_expr, OP_LE),
+        ">" => compile_binary_op(s_expr, OP_GT),
+        ">=" => compile_binary_op(s_expr, OP_GE),
 
         // Mathematical functions
         "sin" | "cos" | "tan" | "log" => {

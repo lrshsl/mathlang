@@ -21,6 +21,11 @@ const OP_SIN: u32 = 7;
 const OP_TAN: u32 = 8;
 const OP_LOG: u32 = 9;
 const OP_EQ: u32 = 12;
+const OP_LT: u32 = 14;  // <
+const OP_LE: u32 = 15;  // <=
+const OP_GT: u32 = 16;  // >
+const OP_GE: u32 = 17;  // >=
+const OP_NE: u32 = 18;  // !=
 const OP_Y: u32 = 13;
 
 struct Uniforms {
@@ -199,6 +204,36 @@ fn execute_instruction(op: Instruction, x: f32, y: f32, sp: ptr<function, u32>, 
             *sp = *sp - 1u;
             let a = stack[*sp - 1u];
             stack[*sp - 1u] = step(abs(a - b), 0.001);
+        }
+        case OP_NE: { // stack[-2] != stack[-1] ? 1.0 : 0.0
+            let b = stack[*sp - 1u];
+            *sp = *sp - 1u;
+            let a = stack[*sp - 1u];
+            stack[*sp - 1u] = 1.0 - step(abs(a - b), 0.001);
+        }
+        case OP_LT: { // stack[-2] < stack[-1] ? 1.0 : 0.0
+            let b = stack[*sp - 1u];
+            *sp = *sp - 1u;
+            let a = stack[*sp - 1u];
+            stack[*sp - 1u] = step(b - a, 0.001);
+        }
+        case OP_LE: { // stack[-2] <= stack[-1] ? 1.0 : 0.0
+            let b = stack[*sp - 1u];
+            *sp = *sp - 1u;
+            let a = stack[*sp - 1u];
+            stack[*sp - 1u] = step(b - a + 0.001, 0.001);
+        }
+        case OP_GT: { // stack[-2] > stack[-1] ? 1.0 : 0.0
+            let b = stack[*sp - 1u];
+            *sp = *sp - 1u;
+            let a = stack[*sp - 1u];
+            stack[*sp - 1u] = step(a - b, 0.001);
+        }
+        case OP_GE: { // stack[-2] >= stack[-1] ? 1.0 : 0.0
+            let b = stack[*sp - 1u];
+            *sp = *sp - 1u;
+            let a = stack[*sp - 1u];
+            stack[*sp - 1u] = step(a - b + 0.001, 0.001);
         }
         default: {}
     }

@@ -24,7 +24,7 @@ mod fn_decl;
 pub use fn_decl::parse_fn_decl;
 
 mod fn_call;
-pub use fn_call::parse_fn_call;
+pub use fn_call::{parse_fn_call, parse_op};
 
 mod literal;
 pub use literal::literal;

@@ -38,32 +38,21 @@ pub fn parse_s_expr(src: Cursor) -> PResult<FunctionCall> {
     ))
 }
 
-fn parse_op<'s>() -> impl Parser<'s, &'s str> {
+pub fn parse_op<'s>() -> impl Parser<'s, &'s str> {
     preceded(
+        whitespace,
         choice!(
+            keyword("=="),
+            keyword("!="),
+            keyword("<="),
+            keyword(">="),
+            keyword("<"),
+            keyword(">"),
             keyword("+"),
             keyword("-"),
             keyword("*"),
             keyword("/"),
-            keyword("^"),
-            keyword("==")
+            keyword("^")
         ),
-        whitespace,
     )
-}
-
-pub fn parse_builtin_binop(src: Cursor) -> PResult<FunctionCall> {
-    let (src, lhs) = parse!(primary, "Couldn't parse lhs expr", src)?;
-
-    let (src, op) = parse!(parse_op(), "Couldn't parse operator expr", src)?;
-    let (src, rhs) = parse!(primary, "Couldn't parse rhs expr", src)?;
-
-    Ok((
-        src,
-        FunctionCall {
-            name: op,
-            args: vec![lhs, rhs],
-            is_negated: false,
-        },
-    ))
 }

@@ -7,10 +7,13 @@ pub fn or<'s, T>(p1: impl Parser<'s, T>, p2: impl Parser<'s, T>) -> impl Parser<
     }
 }
 
-pub fn preceded<'s, T, D>(p1: impl Parser<'s, T>, p2: impl Parser<'s, D>) -> impl Parser<'s, T> {
+pub fn preceded<'s, T, D>(
+    prefix: impl Parser<'s, D>,
+    parser: impl Parser<'s, T>,
+) -> impl Parser<'s, T> {
     move |src| {
-        let (src, _) = p2(src.clone())?;
-        let (src, v) = p1(src.clone())?;
+        let (src, _) = prefix(src.clone())?;
+        let (src, v) = parser(src.clone())?;
         Ok((src, v))
     }
 }

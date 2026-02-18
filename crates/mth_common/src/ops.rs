@@ -12,6 +12,11 @@ pub const OP_SIN: u32 = 7;
 pub const OP_TAN: u32 = 8;
 pub const OP_LOG: u32 = 9;
 pub const OP_EQ: u32 = 12;
+pub const OP_LT: u32 = 14; // <
+pub const OP_LE: u32 = 15; // <=
+pub const OP_GT: u32 = 16; // >
+pub const OP_GE: u32 = 17; // >=
+pub const OP_NE: u32 = 18; // !=
 pub const OP_Y: u32 = 13;
 
 #[derive(Copy, Clone, Debug, PartialEq, bytemuck::Pod, bytemuck::Zeroable)]
