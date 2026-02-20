@@ -26,25 +26,37 @@ var_assign
 expr
 	// lower precedence first
 
-	// Logical ops
+	// logical ops
 	: expr 'or' expr                                    # logical_or
 	| expr 'and' expr                                   # logical_and
-	
-	// Bitwise ops
+
+	// bitwise ops
 	| expr 'binary_or' expr                             # bitwise_or
 	| expr 'xor' expr                                   # bitwise_xor
 	| expr 'binary_and' expr                            # bitwise_and
 	
-	// Comparison ops
+	// comparison ops
 	| expr ( '==' | '<' | '>' | '<=' | '>=' ) expr      # comparison
 	
-	// Arithmetic
+	// arithmetic
 	| expr ( '+' | '-' ) expr                           # add_sub
+
+	// explicit multiplication and division
 	| expr ( '*' | '/' ) expr                           # mul_div
+
+	// implicit multiplication (e.g., 4a, (x+y)z)
+	| expr unary                                        # implicit_mul
+
+	// exponentiation
 	| expr '^' expr                                     # power
-	
-	| primary                                           # atom
+
+	| unary                                             # unary_atom
 	;
+
+unary
+    : ( '+' | '-' | 'not' ) unary                       # unary_op
+    | primary                                           # unary_to_primary
+    ;
 
 primary
 	:'(' expr ')'
