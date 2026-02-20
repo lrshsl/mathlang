@@ -10,13 +10,11 @@ pub fn parse_fn_decl(src: Cursor) -> PResult<Mapping> {
     let (src, name) = parse!(tok(ident), "Could not parse mapping name", src)?;
 
     // Params
-    let (src, _) = parse!(tok(chr('(')), "Expected '(' in function declaration", src)?;
     let (src, params) = parse!(
-        delimited1(parse_param(), tok(chr(','))),
-        "Could not parse params",
+        between(paramlist(), tok(chr('(')), tok(chr('('))),
+        "Couldn't parse params",
         src
     )?;
-    let (src, _) = parse!(tok(chr(')')), "Expected ')' in function declaration", src)?;
 
     // '='
     let (src, _) = parse!(tok(chr('=')), "Expected '=' in function declaration", src)?;
@@ -27,6 +25,7 @@ pub fn parse_fn_decl(src: Cursor) -> PResult<Mapping> {
     Ok((src, Mapping { name, params, body }))
 }
 
-pub fn parse_param<'s>() -> impl Parser<'s, Param<'s>> {
-    pmap(tok(ident), |s| Param(s))
+pub fn paramlist<'s>() -> impl Parser<'s, Vec<Param<'s>>> {
+    let param = pmap(tok(ident), |s| Param(s));
+    delimited1(param, tok(chr(',')))
 }
