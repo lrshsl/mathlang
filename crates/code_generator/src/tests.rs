@@ -1,4 +1,4 @@
-use mth_ast::{Expr, FunctionCall, Literal, Mapping, Module, TopLevel, function_call, int};
+use mth_ast::{Expr, Function, FunctionCall, Literal, Module, TopLevel, function_call, int};
 use mth_common::{inst, ops::*};
 
 use crate::{
@@ -158,7 +158,7 @@ fn test_complex_expression_instruction_count() {
 #[test]
 fn test_compile_mapping_with_literal() {
     // Test a -> 0;
-    let mapping = Mapping {
+    let mapping = Function {
         name: "a",
         params: vec![],
         body: int(0),
@@ -167,7 +167,7 @@ fn test_compile_mapping_with_literal() {
     let module = Module {
         name: None,
         top_level: vec![
-            TopLevel::MapImpl(mapping),
+            TopLevel::Function(mapping),
             TopLevel::Expr(Expr::FunctionCall(FunctionCall {
                 name: "plot",
                 args: vec![Expr::FunctionCall(FunctionCall {
@@ -188,7 +188,7 @@ fn test_compile_mapping_with_literal() {
 #[test]
 fn test_compile_mapping_with_expression() {
     // Test a -> 1 - 1;
-    let mapping = Mapping {
+    let mapping = Function {
         name: "a",
         params: vec![],
         body: function_call("-", vec![int(1), int(1)]),
@@ -197,7 +197,7 @@ fn test_compile_mapping_with_expression() {
     let module = Module {
         name: None,
         top_level: vec![
-            TopLevel::MapImpl(mapping),
+            TopLevel::Function(mapping),
             TopLevel::Expr(Expr::FunctionCall(FunctionCall {
                 name: "plot",
                 args: vec![Expr::FunctionCall(FunctionCall {

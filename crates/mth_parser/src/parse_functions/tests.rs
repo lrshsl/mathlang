@@ -37,7 +37,7 @@ fn parse_mapping_no_params() {
     assert_parses(
         parse_fn_decl,
         "a = 1",
-        Mapping {
+        Function {
             name: "a",
             params: vec![],
             body: int(1),
@@ -51,7 +51,7 @@ fn parse_mapping_with_params() {
     assert_parses(
         parse_fn_decl,
         "add(x, y) = (x + y)",
-        Mapping {
+        Function {
             name: "add",
             params: vec![Param("x".into()), Param("y".into())],
             body: function_call("+", vec![varref("x"), varref("y")]),
@@ -105,12 +105,12 @@ fn parse_module_simple() {
         Module {
             name: None,
             top_level: vec![
-                TopLevel::MapImpl(Mapping {
+                TopLevel::Function(Function {
                     name: "a",
                     params: vec![],
                     body: int(1),
                 }),
-                TopLevel::MapImpl(Mapping {
+                TopLevel::Function(Function {
                     name: "b",
                     params: vec![],
                     body: int(2),

@@ -5,16 +5,16 @@ mod top_level;
 pub use top_level::TopLevel;
 
 mod expr;
-pub use expr::{function_call, varref, Expr};
+pub use expr::{Expr, function_call, varref};
 
 mod type_decl;
 pub use type_decl::{Type, TypeDecl};
 
 mod mapping;
-pub use mapping::{Mapping, Param};
+pub use mapping::{Function, Param};
 
 mod s_expr;
 pub use s_expr::FunctionCall;
 
 mod literal;
-pub use literal::{int, Literal};
+pub use literal::{Literal, int};

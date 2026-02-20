@@ -1,13 +1,13 @@
 use std::collections::HashMap;
 
-use mth_ast::{Expr, FunctionCall, Literal, Mapping, Module, TopLevel};
+use mth_ast::{Expr, Function, FunctionCall, Literal, Module, TopLevel};
 use mth_common::{inst, ops::*};
 
 pub fn compile_module(module: &Module) -> Result<Vec<Instruction>, ()> {
     let mut ctx = HashMap::new();
     for expr in &module.top_level {
         match expr {
-            TopLevel::MapImpl(mapping) => {
+            TopLevel::Function(mapping) => {
                 // Todo: pre-compile mapping?
                 // Currently it is re-compiled each time it is called
                 let _ = ctx.insert(mapping.name, mapping);
@@ -43,9 +43,9 @@ pub fn compile_module(module: &Module) -> Result<Vec<Instruction>, ()> {
     ]))
 }
 
-pub fn compile_fn(f: &Mapping) -> Result<Vec<Instruction>, ()> {
+pub fn compile_fn(f: &Function) -> Result<Vec<Instruction>, ()> {
     match f {
-        Mapping { body, .. } => compile_expr(body),
+        Function { body, .. } => compile_expr(body),
     }
 }
 

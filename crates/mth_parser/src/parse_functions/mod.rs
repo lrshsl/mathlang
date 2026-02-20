@@ -21,7 +21,7 @@ mod type_decl;
 pub use type_decl::parse_type_decl;
 
 mod fn_decl;
-pub use fn_decl::parse_fn_decl;
+pub use fn_decl::{parse_fn_decl, parse_var_assign};
 
 mod fn_call;
 pub use fn_call::{parse_fn_call, parse_op};

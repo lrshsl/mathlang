@@ -1,7 +1,7 @@
 use super::*;
 
 #[derive(Debug, Clone, PartialEq)]
-pub struct Mapping<'s> {
+pub struct Function<'s> {
     pub name: &'s str,
     pub params: Vec<Param<'s>>,
     pub body: Expr<'s>,

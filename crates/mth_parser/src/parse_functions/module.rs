@@ -42,12 +42,12 @@ fn golden_test_module() {
     let expected = Module {
         name: None,
         top_level: Vec::from([
-            TopLevel::MapImpl(Mapping {
+            TopLevel::Function(Function {
                 name: "a",
                 params: vec![],
                 body: int(1),
             }),
-            TopLevel::MapImpl(Mapping {
+            TopLevel::Function(Function {
                 name: "b",
                 params: vec![],
                 body: int(2),
@@ -56,7 +56,7 @@ fn golden_test_module() {
                 name: "c",
                 params: vec![Type::Int],
             }),
-            TopLevel::MapImpl(Mapping {
+            TopLevel::Function(Function {
                 name: "c",
                 params: vec![],
                 body: varref("a"),
@@ -65,7 +65,7 @@ fn golden_test_module() {
                 name: "add",
                 params: vec![Type::Int, Type::Int, Type::Int],
             }),
-            TopLevel::MapImpl(Mapping {
+            TopLevel::Function(Function {
                 name: "add",
                 params: vec![Param("x"), Param("y")],
                 body: function_call("+", vec![varref("x"), varref("y")]),
