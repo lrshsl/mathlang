@@ -115,6 +115,14 @@ pub fn some<'s, T>(p: impl Parser<'s, T>) -> impl Parser<'s, Vec<T>> {
     }
 }
 
+pub fn and_then<'s, T>(a: impl Parser<'s, T>, b: impl Parser<'s, T>) -> impl Parser<'s, Vec<T>> {
+    move |src| {
+        let (src, a_res) = a(src)?;
+        let (src, b_res) = b(src)?;
+        Ok((src, vec![a_res, b_res]))
+    }
+}
+
 pub fn then_append<'s, T>(
     ps: impl Parser<'s, Vec<T>>,
     p: impl Parser<'s, T>,
@@ -124,6 +132,14 @@ pub fn then_append<'s, T>(
         let (src, x) = p(src)?;
         xs.push(x);
         Ok((src, xs))
+    }
+}
+
+pub fn pair<'s, A, B>(a: impl Parser<'s, A>, b: impl Parser<'s, B>) -> impl Parser<'s, (A, B)> {
+    move |src| {
+        let (src, a_res) = a(src)?;
+        let (src, b_res) = b(src)?;
+        Ok((src, (a_res, b_res)))
     }
 }
 

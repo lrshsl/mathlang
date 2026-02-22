@@ -33,9 +33,9 @@ fn parse_expr_application() {
 }
 
 #[test]
-fn parse_mapping_no_params() {
+fn parse_variable_assignment() {
     assert_parses(
-        parse_fn_decl,
+        parse_var_assign,
         "a = 1",
         Function {
             name: "a",
@@ -47,17 +47,14 @@ fn parse_mapping_no_params() {
 }
 
 #[test]
-fn parse_mapping_with_params() {
-    assert_parses(
-        parse_fn_decl,
-        "add(x, y) = (x + y)",
-        Function {
-            name: "add",
-            params: vec![Param("x".into()), Param("y".into())],
-            body: function_call("+", vec![varref("x"), varref("y")]),
-        },
-        "",
-    );
+fn parse_fn_definition() {
+    let output = Function {
+        name: "add",
+        params: vec![Param("x".into()), Param("y".into())],
+        body: function_call("+", vec![varref("x"), varref("y")]),
+    };
+    // assert_parses(parse_fn_decl, "add(x, y) = x + y", output.clone(), "");
+    assert_parses(parse_fn_decl, "add(x, y) = (x + y)", output, "");
 }
 
 #[test]

@@ -1,8 +1,4 @@
-use parser_lib::{
-    cursor::Cursor,
-    pmatch,
-    types::{PResult, Parser},
-};
+use parser_lib::{cursor::Cursor, pmatch, types::PResult};
 
 use super::*;
 
@@ -14,58 +10,61 @@ pub fn expr(src: Cursor) -> PResult<Expr> {
 fn logical_or(src: Cursor) -> PResult<Expr> {
     let bin_op = |s| and_then(terminated(logical_and, tok(keyword(s))), logical_or);
 
-    pmatch!(src; err = "[logical_or] expected expression";
+    let res = pmatch!(
+        src; err = "[logical_or] expected expression";
+        bin_op("or"), exprs => ("or", exprs);
+    );
 
-        bin_op("or"), exprs => function_call("or", exprs);
-        logical_and, x => x;
-    )
+    or_alternative(res, logical_and, src)
 }
 
 // logical `and`
 fn logical_and(src: Cursor) -> PResult<Expr> {
     let bin_op = |s| and_then(terminated(comparison, tok(keyword(s))), logical_and);
 
-    pmatch!(src; err = "[logical_and] expected expression";
+    let res = pmatch!(
+        src; err = "[logical_and] expected expression";
+        bin_op("and"), exprs => ("and", exprs);
+    );
 
-        bin_op("and"), exprs => function_call("and", exprs);
-        comparison, x => x;
-    )
+    or_alternative(res, comparison, src)
 }
 
 // comparison operators (`==`, `<`, `>`, `<=`, `>=`)
 fn comparison(src: Cursor) -> PResult<Expr> {
     let bin_op = |s| and_then(terminated(term, tok(keyword(s))), comparison);
 
-    pmatch!(src; err = "[comparison] expected expression";
+    let res = pmatch!(
+        src; err = "[comparison] expected expression";
+        bin_op("=="), exprs => ("==", exprs);
+        bin_op("<"), exprs => ("<", exprs);
+        bin_op(">"), exprs => (">", exprs);
+        bin_op("<="), exprs => ("<=", exprs);
+        bin_op(">="), exprs => (">=", exprs);
+    );
 
-        bin_op("=="), exprs => function_call("==", exprs);
-        bin_op("<"), exprs => function_call("<", exprs);
-        bin_op(">"), exprs => function_call(">", exprs);
-        bin_op("<="), exprs => function_call("<=", exprs);
-        bin_op(">="), exprs => function_call(">=", exprs);
-        term, x => x;
-    )
+    or_alternative(res, term, src)
 }
 
 // arithmetic term (`+`, `-`)
 fn term(src: Cursor) -> PResult<Expr> {
     let bin_op = |s| and_then(terminated(factor, tok(keyword(s))), term);
 
-    pmatch!(src; err = "[term] expected expression";
+    let res = pmatch!(
+        src; err = "[term] expected expression";
+        bin_op("+"), exprs => ("+", exprs);
+        bin_op("-"), exprs => ("-", exprs);
+    );
 
-        bin_op("+"), exprs => function_call("+", exprs);
-        bin_op("-"), exprs => function_call("-", exprs);
-
-        factor, x => x;
-    )
+    or_alternative(res, factor, src)
 }
 
 // factor (`*`, `/`, and implicit multiplication)
 fn factor(src: Cursor) -> PResult<Expr> {
     let bin_op = |s| and_then(terminated(power, tok(keyword(s))), factor);
 
-    pmatch!(src; err = "[factor] expected expression";
-
+    pmatch!(
+        src; err = "[factor] expected expression";
         bin_op("*"), exprs => function_call("*", exprs);
         bin_op("/"), exprs => function_call("/", exprs);
 
@@ -80,8 +79,8 @@ fn factor(src: Cursor) -> PResult<Expr> {
 fn power(src: Cursor) -> PResult<Expr> {
     let bin_op = |s| and_then(terminated(unary, tok(keyword(s))), power);
 
-    pmatch!(src; err = "[power] expected expression";
-
+    pmatch!(
+        src; err = "[power] expected expression";
         bin_op("^"), exprs => function_call("^", exprs);
         unary, e => e;
     )
@@ -89,7 +88,6 @@ fn power(src: Cursor) -> PResult<Expr> {
 
 fn unary(src: Cursor) -> PResult<Expr> {
     pmatch! {src; err = "[parse_prefix] Couldn't match any prefix expression";
-
         // Unary negation - must come before regular expressions
         preceded(chr('-'), unary), x => -x;
         preceded(chr('+'), unary), x => x;
@@ -115,11 +113,6 @@ pub fn primary(src: Cursor) -> PResult<Expr> {
         tok(ident), x => varref(x);
         literal, x => Expr::Literal(x);
     }
-}
-
-// Helper for `<expr> <op> <expr>` syntax
-fn bin_op(s: &'_ str) -> impl Parser<'_, Vec<Expr<'_>>> {
-    and_then(terminated(comparison, tok(keyword(s))), logical_and)
 }
 
 #[cfg(test)]

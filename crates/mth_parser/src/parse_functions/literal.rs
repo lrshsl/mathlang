@@ -26,13 +26,6 @@ pub fn literal(src: Cursor) -> PResult<Literal> {
     })
 }
 
-fn string(src: Cursor) -> PResult<String> {
-    let (src, _) = parse!(chr('"'), "Expected opening quote", src)?;
-    let (src, content) = parse!(some(satisfy(|ch| ch != '"')), "Expected string", src)?;
-    let (src, _) = parse!(chr('"'), "Expected closing quote", src)?;
-    Ok((src, String::from_iter(content.into_iter())))
-}
-
 fn int(src: Cursor) -> PResult<i32> {
     let (src, int) = parse!(some(digit(10)), "Could not parse int", src)?;
     Ok((
