@@ -38,7 +38,7 @@ pub fn parse_fn_decl(src: Cursor) -> PResult<Function> {
 
     // Params
     let (src, params) = parse!(
-        between(paramlist, tok(chr('(')), tok(chr('('))),
+        between(paramlist, tok(chr('(')), tok(chr(')'))),
         "Couldn't parse params",
         src
     )?;

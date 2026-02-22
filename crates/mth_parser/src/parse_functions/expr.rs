@@ -117,11 +117,6 @@ pub fn primary(src: Cursor) -> PResult<Expr> {
     }
 }
 
-// Helper for `<expr> <op> <expr>` syntax
-fn bin_op(s: &'_ str) -> impl Parser<'_, Vec<Expr<'_>>> {
-    and_then(terminated(comparison, tok(keyword(s))), logical_and)
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
