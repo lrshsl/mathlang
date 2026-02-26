@@ -3,7 +3,7 @@ use std::collections::HashMap;
 use mth_ast::{Expr, Function, FunctionCall, Literal, Module, TopLevel};
 use mth_common::{inst, ops::*};
 
-pub fn compile_module(module: &Module) -> Result<Vec<Instruction>, ()> {
+pub fn compile_module(module: &Module) -> Result<Vec<Instruction>, String> {
     let mut ctx = HashMap::new();
     for expr in &module.top_level {
         match expr {
@@ -33,7 +33,7 @@ pub fn compile_module(module: &Module) -> Result<Vec<Instruction>, ()> {
                 }
                 return Ok(instructions);
             }
-            _ => return Err(()),
+            other => return Err(format!("Invalid top-level: {other:?}")),
         }
     }
     Ok(Vec::from([
@@ -43,28 +43,28 @@ pub fn compile_module(module: &Module) -> Result<Vec<Instruction>, ()> {
     ]))
 }
 
-pub fn compile_fn(f: &Function) -> Result<Vec<Instruction>, ()> {
+pub fn compile_fn(f: &Function) -> Result<Vec<Instruction>, String> {
     match f {
         Function { body, .. } => compile_expr(body),
     }
 }
 
-pub fn compile_expr(expr: &Expr) -> Result<Vec<Instruction>, ()> {
+pub fn compile_expr(expr: &Expr) -> Result<Vec<Instruction>, String> {
     match expr {
         Expr::Literal(lit) => compile_literal(lit),
         Expr::FunctionCall(s_expr) => compile_s_expr(s_expr),
     }
 }
 
-pub fn compile_literal(lit: &Literal) -> Result<Vec<Instruction>, ()> {
+pub fn compile_literal(lit: &Literal) -> Result<Vec<Instruction>, String> {
     match lit {
         Literal::Int(int) => Ok(vec![inst!(OP_CONST, *int as f32)]),
         Literal::Float(float) => Ok(vec![inst!(OP_CONST, *float as f32)]),
-        _ => Err(()),
+        _ => Err(format!("Invalid literal: {lit:?}")),
     }
 }
 
-pub fn compile_s_expr(s_expr: &FunctionCall) -> Result<Vec<Instruction>, ()> {
+pub fn compile_s_expr(s_expr: &FunctionCall) -> Result<Vec<Instruction>, String> {
     let mut instructions = match s_expr.name {
         // Built-in arithmetic operations
         "+" => compile_binary_op(s_expr, OP_ADD),
@@ -84,7 +84,7 @@ pub fn compile_s_expr(s_expr: &FunctionCall) -> Result<Vec<Instruction>, ()> {
         // Mathematical functions
         "sin" | "cos" | "tan" | "log" => {
             if s_expr.args.len() != 1 {
-                return Err(());
+                return Err(format!("Wrong number of arguments for {}", s_expr.name));
             }
             let mut instructions = compile_expr(&s_expr.args[0])?;
             let opcode = match s_expr.name {
@@ -92,7 +92,7 @@ pub fn compile_s_expr(s_expr: &FunctionCall) -> Result<Vec<Instruction>, ()> {
                 "cos" => OP_COS,
                 "tan" => OP_TAN,
                 "log" => OP_LOG,
-                _ => return Err(()),
+                _ => unreachable!(),
             };
             instructions.push(inst!(opcode));
             Ok(instructions)
@@ -100,27 +100,26 @@ pub fn compile_s_expr(s_expr: &FunctionCall) -> Result<Vec<Instruction>, ()> {
 
         "pi" => {
             if s_expr.args.len() != 0 {
-                return Err(());
+                return Err(format!("Wrong number of arguments for {}", s_expr.name));
             }
             Ok(vec![inst!(OP_CONST, std::f32::consts::PI)])
         }
 
         "x" => {
             if s_expr.args.len() != 0 {
-                return Err(());
+                return Err(format!("Wrong number of arguments for {}", s_expr.name));
             }
             Ok(vec![inst!(OP_X)])
         }
 
         "y" => {
             if s_expr.args.len() != 0 {
-                return Err(());
+                return Err(format!("Wrong number of arguments for {}", s_expr.name));
             }
             Ok(vec![inst!(OP_Y)])
         }
 
-        // Unknown function
-        _ => Err(()),
+        _ => Err(format!("Unknown function: {}", s_expr.name)),
     }?;
 
     if s_expr.is_negated {
@@ -129,9 +128,9 @@ pub fn compile_s_expr(s_expr: &FunctionCall) -> Result<Vec<Instruction>, ()> {
     return Ok(instructions);
 }
 
-pub fn compile_binary_op(s_expr: &FunctionCall, opcode: u32) -> Result<Vec<Instruction>, ()> {
+pub fn compile_binary_op(s_expr: &FunctionCall, opcode: u32) -> Result<Vec<Instruction>, String> {
     if s_expr.args.len() != 2 {
-        return Err(());
+        return Err(format!("Wrong number of arguments for {}", s_expr.name));
     }
     let mut instructions = compile_expr(&s_expr.args[0])?;
     instructions.extend(compile_expr(&s_expr.args[1])?);

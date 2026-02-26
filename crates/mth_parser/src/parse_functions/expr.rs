@@ -1,102 +1,102 @@
-use parser_lib::{
-    cursor::Cursor,
-    pmatch,
-    types::{PResult, Parser},
-};
+use parser_lib::{cursor::Cursor, helpers::whitespace, pmatch, types::PResult};
+
+use crate::parse_functions::fn_call::{parse_op, parse_s_expr};
+use mth_ast::FunctionCall;
 
 use super::*;
 
+/// Main expression parser using Pratt parsing for proper operator precedence
 pub fn expr(src: Cursor) -> PResult<Expr> {
-    logical_or(src)
+    parse_expression_with_precedence(src, 0)
 }
 
-// logical `or` (lowest precedence)
-fn logical_or(src: Cursor) -> PResult<Expr> {
-    let bin_op = |s| and_then(terminated(logical_and, tok(keyword(s))), logical_or);
+fn parse_expression_with_precedence(src: Cursor, min_prec: u8) -> PResult<Expr> {
+    // Parse left side (could be unary or primary)
+    let (mut src, mut left) = parse_prefix_expression(src)?;
 
-    pmatch!(src; err = "[logical_or] expected expression";
+    // Parse binary operators while precedence >= min_prec
+    while let Some((op, prec, right_assoc)) = peek_binary_operator(src.clone()) {
+        if prec < min_prec {
+            break;
+        }
 
-        bin_op("or"), exprs => function_call("or", exprs);
-        logical_and, x => x;
-    )
+        // Consume the operator
+        let (next_src, _) = parse!(parse_op(), "Expected operator", src)?;
+
+        // Parse right side with higher precedence for left-associative operators
+        let next_min_prec = if right_assoc { prec } else { prec + 1 };
+        let (next_src, right) = parse_expression_with_precedence(next_src, next_min_prec)?;
+
+        left = Expr::FunctionCall(FunctionCall {
+            name: op,
+            args: vec![left, right],
+            is_negated: false,
+        });
+
+        src = next_src;
+    }
+
+    Ok((src, left))
 }
 
-// logical `and`
-fn logical_and(src: Cursor) -> PResult<Expr> {
-    let bin_op = |s| and_then(terminated(comparison, tok(keyword(s))), logical_and);
-
-    pmatch!(src; err = "[logical_and] expected expression";
-
-        bin_op("and"), exprs => function_call("and", exprs);
-        comparison, x => x;
-    )
-}
-
-// comparison operators (`==`, `<`, `>`, `<=`, `>=`)
-fn comparison(src: Cursor) -> PResult<Expr> {
-    let bin_op = |s| and_then(terminated(term, tok(keyword(s))), comparison);
-
-    pmatch!(src; err = "[comparison] expected expression";
-
-        bin_op("=="), exprs => function_call("==", exprs);
-        bin_op("<"), exprs => function_call("<", exprs);
-        bin_op(">"), exprs => function_call(">", exprs);
-        bin_op("<="), exprs => function_call("<=", exprs);
-        bin_op(">="), exprs => function_call(">=", exprs);
-        term, x => x;
-    )
-}
-
-// arithmetic term (`+`, `-`)
-fn term(src: Cursor) -> PResult<Expr> {
-    let bin_op = |s| and_then(terminated(factor, tok(keyword(s))), term);
-
-    pmatch!(src; err = "[term] expected expression";
-
-        bin_op("+"), exprs => function_call("+", exprs);
-        bin_op("-"), exprs => function_call("-", exprs);
-
-        factor, x => x;
-    )
-}
-
-// factor (`*`, `/`, and implicit multiplication)
-fn factor(src: Cursor) -> PResult<Expr> {
-    let bin_op = |s| and_then(terminated(power, tok(keyword(s))), factor);
-
-    pmatch!(src; err = "[factor] expected expression";
-
-        bin_op("*"), exprs => function_call("*", exprs);
-        bin_op("/"), exprs => function_call("/", exprs);
-
-        // implicit multiplication: two primary expressions side-by-side
-        and_then(primary, factor), exprs => function_call("*", exprs);
-
-        power, x => x;
-    )
-}
-
-// power (`^`) (highest binary precedence)
-fn power(src: Cursor) -> PResult<Expr> {
-    let bin_op = |s| and_then(terminated(unary, tok(keyword(s))), power);
-
-    pmatch!(src; err = "[power] expected expression";
-
-        bin_op("^"), exprs => function_call("^", exprs);
-        unary, e => e;
-    )
-}
-
-fn unary(src: Cursor) -> PResult<Expr> {
+fn parse_prefix_expression(src: Cursor) -> PResult<Expr> {
     pmatch! {src; err = "[parse_prefix] Couldn't match any prefix expression";
 
         // Unary negation - must come before regular expressions
-        preceded(chr('-'), unary), x => -x;
-        preceded(chr('+'), unary), x => x;
+        preceded(chr('-'), parse_prefix_expression), x => -x;
+        preceded(chr('+'), parse_prefix_expression), x => x;
 
-        // Regular primary expressions
+        // Parenthesized expressions (should be tried before implicit multiplication)
+        between(expr, tok(chr('(')), tok(chr(')'))), x => x;
+
+        // S-expressions with function names (like "+", "*", etc.) - only if no implicit multiplication
+        parse_s_expr, x => Expr::FunctionCall(x);
+
+        // Regular primary expressions (includes implicit multiplication)
         primary, x => x;
     }
+}
+
+fn peek_binary_operator(src: Cursor) -> Option<(&'static str, u8, bool)> {
+    // Look ahead to see if we have a binary operator and its precedence
+    let test_src = src.clone();
+
+    // Skip whitespace if present
+    let test_src = match whitespace(test_src.clone()) {
+        Ok((next_src, _)) => next_src,
+        Err(_) => test_src,
+    };
+
+    // Check for each operator
+    for (op, precedence, right_assoc) in get_operator_info() {
+        if let Ok((_, _)) = keyword(op)(test_src.clone()) {
+            return Some((op, *precedence, *right_assoc));
+        }
+    }
+
+    None
+}
+
+fn get_operator_info() -> &'static [(&'static str, u8, bool)] {
+    // (operator, precedence, is_right_associative)
+    // Higher numbers = higher precedence
+    &[
+        // Comparison operators (lowest precedence)
+        ("==", 1, false),
+        ("!=", 1, false),
+        ("<=", 1, false),
+        ("<", 1, false),
+        (">=", 1, false),
+        (">", 1, false),
+        // Addition and subtraction
+        ("+", 2, false),
+        ("-", 2, false),
+        // Multiplication and division
+        ("*", 3, false),
+        ("/", 3, false),
+        // Exponentiation (right-associative)
+        ("^", 4, true),
+    ]
 }
 
 /// primary
@@ -107,14 +107,69 @@ fn unary(src: Cursor) -> PResult<Expr> {
 /// Supports implicit multiplication: "2 x" -> "2 * x"
 pub fn primary(src: Cursor) -> PResult<Expr> {
     pmatch! {src; err = "[parse_primary] Couldn't match any subparser";
-        // '(' expr ')'
-        between(expr, tok(chr('(')), tok(chr(')'))), x => x;
-
+        // Try implicit multiplication first (literal/identifier followed by expression)
+        try_implicit_multiplication, x => x;
         // Regular primary expressions
+        literal, x => Expr::Literal(x);
         parse_fn_call, x => Expr::FunctionCall(x);
         tok(ident), x => varref(x);
-        literal, x => Expr::Literal(x);
+        between(expr, tok(chr('(')), tok(chr(')'))), x => x;
     }
+}
+
+// Try to parse implicit multiplication: "2 x" -> "2 * x"
+fn try_implicit_multiplication(src: Cursor) -> PResult<Expr> {
+    // Parse a literal or identifier first
+    let (src, left) = pmatch! {src; err = "[implicit_multiply] Expected literal or identifier";
+        literal, x => Expr::Literal(x);
+        tok(ident), x => varref(x);
+    }?;
+
+    // Skip whitespace - required for implicit multiplication
+    let src = match whitespace(src.clone()) {
+        Ok((new_src, _)) => new_src,
+        Err(_) => return Ok((src, left)), // No whitespace, don't do implicit multiplication
+    };
+
+    // Check if next token can be multiplied implicitly (literal, identifier, or '(')
+    // But NOT if it looks like a function call (identifier followed by '(' without space)
+    let can_multiply = match src.clone() {
+        test_src => {
+            // Check if it starts with '(' (for parentheses)
+            if test_src.remainder.starts_with('(') {
+                true
+            } else if literal(test_src.clone()).is_ok() {
+                // Check for literal
+                true
+            } else if let Ok((after_ident, _)) = tok(ident)(test_src.clone()) {
+                // Check for identifier, but make sure it's not followed immediately by '('
+                // If the identifier is followed immediately by '(', it's a function call, not implicit multiplication
+                !after_ident.remainder.starts_with('(')
+            } else {
+                false
+            }
+        }
+    };
+
+    if !can_multiply {
+        return Ok((src, left));
+    }
+
+    // Parse the right side (but only primary expressions, not full expressions)
+    let (src, right) = pmatch! {src; err = "[implicit_multiply] Expected right operand";
+        between(expr, tok(chr('(')), tok(chr(')'))), x => x;
+        literal, x => Expr::Literal(x);
+        tok(ident), x => varref(x);
+    }?;
+
+    Ok((
+        src,
+        Expr::FunctionCall(FunctionCall {
+            name: "*",
+            args: vec![left, right],
+            is_negated: false,
+        }),
+    ))
 }
 
 #[cfg(test)]
