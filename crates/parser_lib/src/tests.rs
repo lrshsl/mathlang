@@ -92,7 +92,7 @@ fn test_ident() {
 #[test]
 fn test_pmap() {
     let src = Cursor::new("a");
-    let p = pmap(chr('a'), |c| c.to_ascii_uppercase());
+    let p = pmap(|c| c.to_ascii_uppercase(), chr('a'));
     let (_, v) = p(src).unwrap();
     assert_eq!(v, 'A');
 }

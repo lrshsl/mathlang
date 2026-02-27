@@ -32,7 +32,7 @@ impl Default for FileContext {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct PError {
     pub msg: String,
     pub ctx: FileContext,

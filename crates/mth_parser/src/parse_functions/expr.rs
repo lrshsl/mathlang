@@ -49,8 +49,8 @@ fn parse_prefix_expression(src: Cursor) -> PResult<Expr> {
         // Parenthesized expressions (should be tried before implicit multiplication)
         between(expr, tok(chr('(')), tok(chr(')'))), x => x;
 
-        // S-expressions with function names (like "+", "*", etc.) - only if no implicit multiplication
-        parse_s_expr, x => Expr::FunctionCall(x);
+        // Function call
+        parse_fn_call, x => Expr::FunctionCall(x);
 
         // Regular primary expressions (includes implicit multiplication)
         primary, x => x;

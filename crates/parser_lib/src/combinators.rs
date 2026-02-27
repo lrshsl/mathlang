@@ -1,4 +1,7 @@
-use crate::types::{BoxedParser, PError, Parser};
+use crate::{
+    primitives::optional,
+    types::{BoxedParser, PError, Parser},
+};
 
 pub fn or<'s, T>(p1: impl Parser<'s, T>, p2: impl Parser<'s, T>) -> impl Parser<'s, T> {
     move |src| match p1(src.clone()) {
@@ -135,6 +138,20 @@ pub fn then_append<'s, T>(
     }
 }
 
+pub fn then_append_maybe<'s, T>(
+    ps: impl Parser<'s, Vec<T>>,
+    p: impl Parser<'s, T>,
+) -> impl Parser<'s, Vec<T>> {
+    move |src| {
+        let (mut src, mut xs) = ps(src)?;
+        if let Ok((new_src, x)) = p(src.clone()) {
+            xs.push(x);
+            src = new_src;
+        }
+        Ok((src, xs))
+    }
+}
+
 pub fn pair<'s, A, B>(a: impl Parser<'s, A>, b: impl Parser<'s, B>) -> impl Parser<'s, (A, B)> {
     move |src| {
         let (src, a_res) = a(src)?;
@@ -143,7 +160,7 @@ pub fn pair<'s, A, B>(a: impl Parser<'s, A>, b: impl Parser<'s, B>) -> impl Pars
     }
 }
 
-/// Parses `p` delimited by `del`. Requires will fail on empty input.
+/// Parses `p` delimited by `del`. Fails on empty input.
 ///
 /// ```rust
 /// # use parser_lib::combinators::delimited1;
@@ -160,4 +177,12 @@ pub fn delimited1<'s, T, Del>(
     del: impl Parser<'s, Del>,
 ) -> impl Parser<'s, Vec<T>> {
     move |src| then_append(many0(terminated(&p, &del)), &p)(src)
+}
+
+/// Parses `p` delimited by `del`. Succeeds on empty input.
+pub fn delimited0<'s, T, Del>(
+    p: impl Parser<'s, T>,
+    del: impl Parser<'s, Del>,
+) -> impl Parser<'s, Vec<T>> {
+    move |src| then_append_maybe(many0(terminated(&p, &del)), &p)(src)
 }

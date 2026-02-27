@@ -36,7 +36,7 @@ macro_rules! pmatch {
         match $p($src.clone()) {
             Ok((src, $pattern)) => Ok((src, $action)),
             Err(mut e) => {
-                e.msg = $err.to_string();
+                e.msg = $err.to_string() + &e.msg;
                 Err(e)
             }
         }

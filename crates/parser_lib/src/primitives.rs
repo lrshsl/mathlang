@@ -27,10 +27,9 @@ pub fn satisfy<'s>(pred: impl Fn(char) -> bool) -> impl Parser<'s, char> {
 }
 
 pub fn optional<'s, T>(p: impl Parser<'s, T>) -> impl Parser<'s, Option<T>> {
-    move |src| {
-        p(src.clone())
-            .map(|(new_src, v)| (new_src, Some(v)))
-            .or(Ok((src, None)))
+    move |src| match p(src.clone()) {
+        Ok((src, res)) => Ok((src, Some(res))),
+        Err(_) => Ok((src, None)),
     }
 }
 
@@ -88,7 +87,7 @@ pub fn keyword<'s, 'exp>(expected: &'exp str) -> impl Parser<'s, &'s str> + 'exp
 }
 
 /// Map a function to a parser to transform the underlying type
-pub fn pmap<'s, A, B: Clone>(p: impl Parser<'s, A>, f: impl Fn(A) -> B) -> impl Parser<'s, B> {
+pub fn pmap<'s, A, B: Clone>(f: impl Fn(A) -> B, p: impl Parser<'s, A>) -> impl Parser<'s, B> {
     move |src| {
         let (src, a) = p(src)?;
         okparser(f(a))(src)

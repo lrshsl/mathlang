@@ -1,5 +1,3 @@
-use parser_lib::types::Parser;
-
 use super::*;
 
 /// var_assign
@@ -53,6 +51,6 @@ pub fn parse_fn_decl(src: Cursor) -> PResult<Function> {
 }
 
 pub fn paramlist(src: Cursor) -> PResult<Vec<Param>> {
-    let param = pmap(tok(ident), |s| Param(s));
-    delimited1(param, tok(chr(',')))(src)
+    let param = pmap(Param, tok(ident));
+    delimited0(&param, &tok(chr(',')))(src)
 }

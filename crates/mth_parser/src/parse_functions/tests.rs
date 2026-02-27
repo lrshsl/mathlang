@@ -85,7 +85,13 @@ fn parse_type_decl_fn() {
 
 #[test]
 fn parse_top_level_expr() {
-    assert_parses(parse_top_level, "x();", TopLevel::Expr(varref("x")), "");
+    assert_parses(parse_top_level, "x;", TopLevel::Expr(varref("x")), "");
+    assert_parses(
+        parse_top_level,
+        "x();",
+        TopLevel::Expr(function_call("x", vec![])),
+        "",
+    );
 }
 
 #[test]
