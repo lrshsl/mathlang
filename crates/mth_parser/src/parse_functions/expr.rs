@@ -116,9 +116,20 @@ pub fn primary(src: Cursor) -> PResult<Expr> {
         // Regular primary expressions
         literal, x => Expr::Literal(x);
         parse_fn_call, x => Expr::FunctionCall(x);
-        tok(ident), x => varref(x);
+        tok(non_keyword_ident), x => varref(x);
         between(expr, tok(chr('(')), tok(chr(')'))), x => x;
     }
+}
+
+pub fn non_keyword_ident(src: Cursor<'_>) -> PResult<'_, &'_ str> {
+    let (src, id) = ident(src)?;
+    if ["and", "or", "bitwise_and", "bitwise_xor", "bitwise_or"].contains(&id) {
+        return Err(PError {
+            msg: format!("Cannot use {id} as identifier since it is a hard keyword"),
+            ctx: src.ctx.clone(),
+        });
+    }
+    Ok((src, id))
 }
 
 // Try to parse implicit multiplication: "2 x" -> "2 * x"
@@ -126,7 +137,7 @@ fn try_implicit_multiplication(src: Cursor) -> PResult<Expr> {
     // Parse a literal or identifier first
     let (src, left) = pmatch! {src; err = "[implicit_multiply] Expected literal or identifier";
         literal, x => Expr::Literal(x);
-        tok(ident), x => varref(x);
+        tok(non_keyword_ident), x => varref(x);
     }?;
 
     // Skip whitespace - required for implicit multiplication
@@ -145,7 +156,7 @@ fn try_implicit_multiplication(src: Cursor) -> PResult<Expr> {
             } else if literal(test_src.clone()).is_ok() {
                 // Check for literal
                 true
-            } else if let Ok((after_ident, _)) = tok(ident)(test_src.clone()) {
+            } else if let Ok((after_ident, _)) = tok(non_keyword_ident)(test_src.clone()) {
                 // Check for identifier, but make sure it's not followed immediately by '('
                 // If the identifier is followed immediately by '(', it's a function call, not implicit multiplication
                 !after_ident.remainder.starts_with('(')
@@ -163,7 +174,7 @@ fn try_implicit_multiplication(src: Cursor) -> PResult<Expr> {
     let (src, right) = pmatch! {src; err = "[implicit_multiply] Expected right operand";
         between(expr, tok(chr('(')), tok(chr(')'))), x => x;
         literal, x => Expr::Literal(x);
-        tok(ident), x => varref(x);
+        tok(non_keyword_ident), x => varref(x);
     }?;
 
     Ok((
