@@ -20,7 +20,7 @@ impl MainState {
         column![
             container(
                 widget::text_editor(&self.text)
-                    .size(14)
+                    .size(20)
                     .height(Fill)
                     .on_action(Message::EditText)
             )

@@ -215,13 +215,13 @@ fn execute_instruction(op: Instruction, x: f32, y: f32, sp: ptr<function, u32>, 
             let b = stack[*sp - 1u];
             *sp = *sp - 1u;
             let a = stack[*sp - 1u];
-            stack[*sp - 1u] = step(abs(a - b), 0.001);
+            stack[*sp - 1u] = step(abs(a - b), 0.01);
         }
         case OP_NE: { // stack[-2] != stack[-1] ? 1.0 : 0.0
             let b = stack[*sp - 1u];
             *sp = *sp - 1u;
             let a = stack[*sp - 1u];
-            stack[*sp - 1u] = 1.0 - step(abs(a - b), 0.001);
+            stack[*sp - 1u] = 1.0 - step(abs(a - b), 0.01);
         }
         case OP_LT: { // stack[-2] < stack[-1] ? 1.0 : 0.0
             let b = stack[*sp - 1u];
