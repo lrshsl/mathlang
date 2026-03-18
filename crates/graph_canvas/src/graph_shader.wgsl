@@ -69,7 +69,13 @@ fn vs_main(in: VertexIn) -> VertexOut {
 // Helper function to check if instructions contain equality operations
 fn is_boolean_condition() -> bool {
     for (var i: u32 = 0u; i < u.instruction_count; i = i + 1u) {
-        if instructions[i].opcode == OP_EQ {
+        if instructions[i].opcode == OP_EQ
+            || instructions[i].opcode == OP_EQ
+            || instructions[i].opcode == OP_GT
+            || instructions[i].opcode == OP_LT
+            || instructions[i].opcode == OP_GE
+            || instructions[i].opcode == OP_LE
+        {
             return true;
         }
     }
@@ -82,8 +88,9 @@ fn is_on_curve(x: f32, y: f32, d: f32) -> bool {
     // Calculate distance from curve //
 
     // Central difference (+dx -dx) for more precision
-    let dx = 0.001 * max(1.0, x);
-    let dy = (eval_function(x + dx, 0.0) - eval_function(x - dx, 0.0)) / (2.0 * dx);
+    let screen_space_deriv_y = dpdxFine(eval_function(x, 0.0));
+    let screen_space_deriv_x = dpdxFine(x);
+    let dy = screen_space_deriv_y / screen_space_deriv_x;
     
     // Vertical distance to the curve
     let vertical_dist = y - curve_y;
