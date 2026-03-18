@@ -1,3 +1,5 @@
+use std::fs;
+
 use graph_canvas::N_INSTRUCTIONS;
 use mth_common::ops::Instruction;
 
@@ -30,7 +32,8 @@ impl MainState {
         match mth_parser::parse_program(&text) {
             // Ok
             Ok((rem, module)) if rem.remainder.is_empty() => {
-                println!("{module:#?}");
+                fs::write("output/last_ast", format!("{module:#?}"))
+                    .expect("Couldn't write ast to file: output dir doesn't exists?");
 
                 // Codegen
                 match code_generator::compile_module(&module) {

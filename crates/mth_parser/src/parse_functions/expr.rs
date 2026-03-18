@@ -15,17 +15,17 @@ fn parse_expression_with_precedence(src: Cursor, min_prec: u8) -> PResult<Expr> 
     let (mut src, mut left) = parse_prefix_expression(src)?;
 
     // Parse binary operators while precedence >= min_prec
-    while let Some((op, prec, right_assoc)) = peek_binary_operator(src.clone()) {
+    while let Ok((next_src, (op, prec, right_assoc))) = parse_binop(src.clone()) {
         if prec < min_prec {
             break;
         }
 
         // Consume the operator
-        let (next_src, _) = parse!(parse_op(), "Expected operator", src)?;
+        src = next_src;
 
         // Parse right side with higher precedence for left-associative operators
         let next_min_prec = if right_assoc { prec } else { prec + 1 };
-        let (next_src, right) = parse_expression_with_precedence(next_src, next_min_prec)?;
+        let (next_src, right) = parse_expression_with_precedence(src, next_min_prec)?;
 
         left = Expr::FunctionCall(FunctionCall {
             name: op,
@@ -57,45 +57,49 @@ fn parse_prefix_expression(src: Cursor) -> PResult<Expr> {
     }
 }
 
-fn peek_binary_operator(src: Cursor) -> Option<(&'static str, u8, bool)> {
-    // Look ahead to see if we have a binary operator and its precedence
-    let test_src = src.clone();
+fn parse_binop(src: Cursor) -> PResult<(&'static str, u8, bool)> {
+    let op_parser = tok(some(satisfy(|ch| !ch.is_whitespace())));
+    let (src, op) = parse!(op_parser, "[parse_binop] No binop matched", src)?;
 
-    // Skip whitespace if present
-    let test_src = match whitespace(test_src.clone()) {
-        Ok((next_src, _)) => next_src,
-        Err(_) => test_src,
-    };
+    let opinfo = get_operator_info()
+        .iter()
+        .filter(|opinfo| op.iter().copied().eq(opinfo.0.chars()))
+        .next()
+        .cloned()
+        .ok_or(PError {
+            msg: "[parse_binop] No binop matched".to_owned(),
+            ctx: src.ctx.clone(),
+        })?;
 
-    // Check for each operator
-    for (op, precedence, right_assoc) in get_operator_info() {
-        if let Ok((_, _)) = keyword(op)(test_src.clone()) {
-            return Some((op, *precedence, *right_assoc));
-        }
-    }
-
-    None
+    Ok((src, opinfo))
 }
 
 fn get_operator_info() -> &'static [(&'static str, u8, bool)] {
     // (operator, precedence, is_right_associative)
     // Higher numbers = higher precedence
     &[
-        // Comparison operators (lowest precedence)
-        ("==", 1, false),
-        ("!=", 1, false),
-        ("<=", 1, false),
-        ("<", 1, false),
-        (">=", 1, false),
-        (">", 1, false),
-        // Addition and subtraction
-        ("+", 2, false),
-        ("-", 2, false),
+        // Logical ops (lowest precedence)
+        ("and", 1, false),
+        ("or", 2, false),
+        // Bitwise ops
+        ("bitwise_and", 3, false),
+        ("bitwise_xor", 4, false),
+        ("bitwise_or", 5, false),
+        // Comparison ops
+        ("==", 6, false),
+        ("!=", 6, false),
+        ("<=", 6, false),
+        ("<", 6, false),
+        (">=", 6, false),
+        (">", 6, false),
+        // Addition and subtraction (as binary ops)
+        ("+", 7, false),
+        ("-", 7, false),
         // Multiplication and division
-        ("*", 3, false),
-        ("/", 3, false),
+        ("*", 8, false),
+        ("/", 8, false),
         // Exponentiation (right-associative)
-        ("^", 4, true),
+        ("^", 9, true),
     ]
 }
 

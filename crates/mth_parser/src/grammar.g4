@@ -31,9 +31,9 @@ expr
 	| expr 'and' expr                                   # logical_and
 
 	// bitwise ops
-	| expr 'binary_or' expr                             # bitwise_or
-	| expr 'xor' expr                                   # bitwise_xor
-	| expr 'binary_and' expr                            # bitwise_and
+	| expr 'bitwise_or' expr                            # bitwise_or
+	| expr 'bitwise_xor' expr                           # bitwise_xor
+	| expr 'bitwise_and' expr                           # bitwise_and
 	
 	// comparison ops
 	| expr ( '==' | '<' | '>' | '<=' | '>=' ) expr      # comparison

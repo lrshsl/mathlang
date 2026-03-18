@@ -1,7 +1,4 @@
-use crate::{
-    primitives::optional,
-    types::{BoxedParser, PError, Parser},
-};
+use crate::types::{BoxedParser, PError, Parser};
 
 pub fn or<'s, T>(p1: impl Parser<'s, T>, p2: impl Parser<'s, T>) -> impl Parser<'s, T> {
     move |src| match p1(src.clone()) {
@@ -180,6 +177,17 @@ pub fn delimited1<'s, T, Del>(
 }
 
 /// Parses `p` delimited by `del`. Succeeds on empty input.
+///
+/// ```rust
+/// # use parser_lib::combinators::delimited0;
+/// # use parser_lib::primitives::chr;
+/// # use parser_lib::helpers::{ident, tok};
+/// # use parser_lib::cursor::Cursor;
+///
+/// let src = Cursor::new("");
+/// let (_, result) = delimited0(tok(ident), tok(chr(',')))(src).unwrap();
+/// assert_eq!(result.len(), 0)
+/// ```
 pub fn delimited0<'s, T, Del>(
     p: impl Parser<'s, T>,
     del: impl Parser<'s, Del>,

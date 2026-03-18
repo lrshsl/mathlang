@@ -88,7 +88,7 @@ mod unary_operators {
 
     #[test]
     fn parse_unary_neg_function_call() {
-        assert_expr("-f()", -function_call("f", vec![]), "()");
+        assert_expr("-f()", -function_call("f", vec![]), "");
     }
 
     #[test]
@@ -241,6 +241,25 @@ mod operator_precedence {
     }
 }
 
+mod logical_operators {
+    use super::*;
+
+    #[test]
+    fn parse_simple_and() {
+        assert_expr(
+            "1 > 2 and 4 < 2 * 10",
+            function_call(
+                "and",
+                vec![
+                    function_call(">", vec![int(1), int(2)]),
+                    function_call("<", vec![int(4), function_call("*", vec![int(2), int(10)])]),
+                ],
+            ),
+            "",
+        );
+    }
+}
+
 mod parenthesized_expressions {
     use super::*;
 
@@ -311,7 +330,7 @@ mod function_calls {
 
     #[test]
     fn parse_fn_call_no_args() {
-        assert_expr("foo()", function_call("foo", vec![]), "()");
+        assert_expr("foo()", function_call("foo", vec![]), "");
     }
 
     #[test]

@@ -3,15 +3,15 @@ use parser_lib::{choice, types::Parser};
 use super::*;
 
 pub fn parse_fn_call(src: Cursor) -> PResult<FunctionCall> {
-    let parse_args = delimited1(tok(expr), tok(chr(',')));
-
     let (src, name) = parse!(tok(ident), "Couldn't parse function name", src)?;
-    let (src, _) = parse!(tok(chr('(')), "Expected '(' after function name", src)?;
 
     // Parse comma-separated arguments
-    let (src, args) = parse!(parse_args, "Couldn't parse function arguments", src)?;
-
-    let (src, _) = parse!(tok(chr(')')), "Expected ')' after function arguments", src)?;
+    let parse_args = delimited0(tok(expr), tok(chr(',')));
+    let (src, args) = parse!(
+        between(parse_args, tok(chr('(')), tok(chr(')'))),
+        "Couldn't parse function arguments",
+        src
+    )?;
 
     Ok((
         src,
