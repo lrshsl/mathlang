@@ -24,14 +24,15 @@ const OP_LE: u32 =  13;  // <=
 const OP_GT: u32 =  14;  // >
 const OP_GE: u32 =  15;  // >=
 const OP_NE: u32 =  16;  // !=
-const OP_Y: u32 =   17;
+const OP_Y : u32 =  17;
+const OP_ABS: u32 = 18;
 
-const OP_OR: u32 =  18;
-const OP_AND: u32 = 19;
+const OP_OR: u32 =  19;
+const OP_AND: u32 = 20;
 
-const OP_BW_OR: u32 =  20;
-const OP_BW_XOR: u32 = 21;
-const OP_BW_AND: u32 = 22;
+const OP_BW_OR: u32 =  21;
+const OP_BW_XOR: u32 = 22;
+const OP_BW_AND: u32 = 23;
 
 struct Uniforms {
     viewport_origin: vec2f,
@@ -206,6 +207,9 @@ fn execute_instruction(op: Instruction, x: f32, y: f32, sp: ptr<function, u32>, 
         }
         case OP_LOG: { // log(stack[-1])
             stack[*sp - 1u] = log(stack[*sp - 1u]);
+        }
+        case OP_ABS: { // abs(stack[-1])
+            stack[*sp - 1u] = abs(stack[*sp - 1u]);
         }
         case OP_EQ: { // stack[-2] == stack[-1] ? 1.0 : 0.0
             let b = stack[*sp - 1u];

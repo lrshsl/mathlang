@@ -57,16 +57,15 @@ fn parse_prefix_expression(src: Cursor) -> PResult<Expr> {
 }
 
 fn parse_binop(src: Cursor) -> PResult<(&'static str, u8, bool)> {
-    let op_parser = tok(some(satisfy(|ch| !ch.is_whitespace())));
-    let (src, op) = parse!(op_parser, "[parse_binop] No binop matched", src)?;
+    let (src, op) = parse_op()(src)?;
 
     let opinfo = get_operator_info()
         .iter()
-        .filter(|opinfo| op.iter().copied().eq(opinfo.0.chars()))
+        .filter(|opinfo| opinfo.0 == op)
         .next()
         .cloned()
         .ok_or(PError {
-            msg: "[parse_binop] No binop matched".to_owned(),
+            msg: "[parse_binop] Unknown operator".to_string(),
             ctx: src.ctx.clone(),
         })?;
 

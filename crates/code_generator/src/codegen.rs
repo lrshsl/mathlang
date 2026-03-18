@@ -103,6 +103,15 @@ pub fn compile_s_expr(s_expr: &FunctionCall) -> Result<Vec<Instruction>, String>
             Ok(instructions)
         }
 
+        "abs" => {
+            if s_expr.args.len() != 1 {
+                return Err(format!("Wrong number of arguments for {}", s_expr.name));
+            }
+            let mut instructions = compile_expr(&s_expr.args[0])?;
+            instructions.push(inst!(OP_ABS));
+            Ok(instructions)
+        }
+
         "pi" => {
             if s_expr.args.len() != 0 {
                 return Err(format!("Wrong number of arguments for {}", s_expr.name));

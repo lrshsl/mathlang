@@ -37,7 +37,9 @@ pub fn parse_op<'s>() -> impl Parser<'s, &'s str> {
             keyword("-"),
             keyword("*"),
             keyword("/"),
-            keyword("^")
+            keyword("^"),
+            keyword("and"),
+            keyword("or")
         ),
     )
 }

@@ -4,7 +4,7 @@ use parser_lib::cursor::Cursor;
 
 fn assert_expr(input: &str, expected: Expr<'_>, expected_rem: &str) {
     let (next, parsed) = expr(Cursor::new(input)).expect("parse_expr failed");
-    assert_eq!(parsed, expected, "remainder: {}", next.remainder);
+    assert_eq!(parsed, expected, "remainder: {:?}", next.remainder);
     assert_eq!(next.remainder, expected_rem);
 }
 
@@ -437,5 +437,35 @@ mod edge_cases {
     #[test]
     fn parse_zero_negation() {
         assert_expr("-0", int(0), "");
+    }
+}
+
+mod regression_tests {
+    use super::*;
+    use mth_parser::parse_functions::parse_fn_call;
+    use parser_lib::cursor::Cursor;
+
+    #[test]
+    fn fn_call_requires_parentheses() {
+        // parse_fn_call should FAIL when there's no opening paren
+        let src = Cursor::new("xyz+1");
+        let result = parse_fn_call(src);
+        assert!(result.is_err(), "parse_fn_call should fail without '('");
+    }
+
+    #[test]
+    fn fn_call_with_parentheses() {
+        // parse_fn_call should succeed with parentheses
+        let src = Cursor::new("foo(x, y)");
+        let (next, fc) = parse_fn_call(src).unwrap();
+        assert_eq!(fc.name, "foo");
+        assert_eq!(fc.args.len(), 2);
+        assert_eq!(next.remainder, "");
+    }
+
+    #[test]
+    fn expr_with_varref_plus_number() {
+        // "xyz+1" should parse as varref("xyz") then binary + with int(1)
+        assert_expr("xyz+1", function_call("+", vec![varref("xyz"), int(1)]), "");
     }
 }
