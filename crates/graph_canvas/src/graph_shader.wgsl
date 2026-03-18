@@ -4,36 +4,34 @@ const STROKE_WIDTH: f32 = 1.;
 struct Instruction {
     opcode: u32,
     a: f32,
-    b: f32,
 }
 
 // OpCodes
 const OP_CONST: u32 = 0;
 const OP_X: u32 = 1;
-const OP_X_POLY: u32 = 2;
-const OP_ADD: u32 = 3;
-const OP_SUB: u32 = 10;
+const OP_ADD: u32 = 2;
+const OP_SUB: u32 = 3;
 const OP_MUL: u32 = 4;
-const OP_DIV: u32 = 11;
-const OP_POW: u32 = 5;
-const OP_COS: u32 = 6;
-const OP_SIN: u32 = 7;
-const OP_TAN: u32 = 8;
-const OP_LOG: u32 = 9;
-const OP_EQ: u32 = 12;
-const OP_LT: u32 = 14;  // <
-const OP_LE: u32 = 15;  // <=
-const OP_GT: u32 = 16;  // >
-const OP_GE: u32 = 17;  // >=
-const OP_NE: u32 = 18;  // !=
-const OP_Y: u32 = 13;
+const OP_DIV: u32 = 5;
+const OP_POW: u32 = 6;
+const OP_COS: u32 = 7;
+const OP_SIN: u32 = 8;
+const OP_TAN: u32 = 9;
+const OP_LOG: u32 = 10;
+const OP_EQ: u32 =  11;
+const OP_LT: u32 =  12;  // <
+const OP_LE: u32 =  13;  // <=
+const OP_GT: u32 =  14;  // >
+const OP_GE: u32 =  15;  // >=
+const OP_NE: u32 =  16;  // !=
+const OP_Y: u32 =   17;
 
-const OP_OR: u32 = 19;
-const OP_AND: u32 = 20;
+const OP_OR: u32 =  18;
+const OP_AND: u32 = 19;
 
-const OP_BW_OR: u32 = 21;
-const OP_BW_XOR: u32 = 22;
-const OP_BW_AND: u32 = 23;
+const OP_BW_OR: u32 =  20;
+const OP_BW_XOR: u32 = 21;
+const OP_BW_AND: u32 = 22;
 
 struct Uniforms {
     viewport_origin: vec2f,
@@ -165,10 +163,6 @@ fn execute_instruction(op: Instruction, x: f32, y: f32, sp: ptr<function, u32>, 
         }
         case OP_Y: { // => y
             stack[*sp] = y;
-            *sp = *sp + 1u;
-        }
-        case OP_X_POLY: { // => a * (x**b)
-            stack[*sp] = op.a * spow(x, op.b);
             *sp = *sp + 1u;
         }
         case OP_ADD: { // stack[-2] += stack[-1]
