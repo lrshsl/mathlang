@@ -19,6 +19,13 @@ pub const OP_GE: u32 = 17; // >=
 pub const OP_NE: u32 = 18; // !=
 pub const OP_Y: u32 = 13;
 
+pub const OP_OR: u32 = 19;
+pub const OP_AND: u32 = 20;
+
+pub const OP_BW_OR: u32 = 21;
+pub const OP_BW_XOR: u32 = 22;
+pub const OP_BW_AND: u32 = 23;
+
 #[derive(Copy, Clone, Debug, PartialEq, bytemuck::Pod, bytemuck::Zeroable)]
 #[repr(C)]
 pub struct Instruction {

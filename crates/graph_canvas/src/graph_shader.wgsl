@@ -28,6 +28,13 @@ const OP_GE: u32 = 17;  // >=
 const OP_NE: u32 = 18;  // !=
 const OP_Y: u32 = 13;
 
+const OP_OR: u32 = 19;
+const OP_AND: u32 = 20;
+
+const OP_BW_OR: u32 = 21;
+const OP_BW_XOR: u32 = 22;
+const OP_BW_AND: u32 = 23;
+
 struct Uniforms {
     viewport_origin: vec2f,
     viewport_size: vec2f,
@@ -215,25 +222,35 @@ fn execute_instruction(op: Instruction, x: f32, y: f32, sp: ptr<function, u32>, 
             let b = stack[*sp - 1u];
             *sp = *sp - 1u;
             let a = stack[*sp - 1u];
-            stack[*sp - 1u] = step(b - a, 0.001);
+            stack[*sp - 1u] = step(a - b, 0.001);
         }
         case OP_LE: { // stack[-2] <= stack[-1] ? 1.0 : 0.0
             let b = stack[*sp - 1u];
             *sp = *sp - 1u;
             let a = stack[*sp - 1u];
-            stack[*sp - 1u] = step(b - a + 0.001, 0.001);
+            stack[*sp - 1u] = step(a - b + 0.001, 0.001);
         }
         case OP_GT: { // stack[-2] > stack[-1] ? 1.0 : 0.0
             let b = stack[*sp - 1u];
             *sp = *sp - 1u;
             let a = stack[*sp - 1u];
-            stack[*sp - 1u] = step(a - b, 0.001);
+            stack[*sp - 1u] = step(b - a, 0.001);
         }
         case OP_GE: { // stack[-2] >= stack[-1] ? 1.0 : 0.0
             let b = stack[*sp - 1u];
             *sp = *sp - 1u;
             let a = stack[*sp - 1u];
-            stack[*sp - 1u] = step(a - b + 0.001, 0.001);
+            stack[*sp - 1u] = step(b - a + 0.001, 0.001);
+        }
+        case OP_AND: { // stack[-2] == stack[-1] == 1.0 ? 1.0 : 0.0
+            let s = stack[*sp - 1u] + stack[*sp - 2u];
+            *sp = *sp - 1u;
+            stack[*sp - 1u] = step(1.001, s);
+        }
+        case OP_OR: { // stack[-2] + stack[-1] == 1.0 ? 1.0 : 0.0
+            let s = stack[*sp - 1u] + stack[*sp - 2u];
+            *sp = *sp - 1u;
+            stack[*sp - 1u] = step(0.001, s);
         }
         default: {}
     }

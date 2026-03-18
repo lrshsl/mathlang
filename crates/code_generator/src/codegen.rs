@@ -36,11 +36,7 @@ pub fn compile_module(module: &Module) -> Result<Vec<Instruction>, String> {
             other => return Err(format!("Invalid top-level: {other:?}")),
         }
     }
-    Ok(Vec::from([
-        inst!(OP_X_POLY, -1., 3.),
-        inst!(OP_CONST, 1.),
-        inst!(OP_ADD),
-    ]))
+    Ok(vec![])
 }
 
 pub fn compile_fn(f: &Function) -> Result<Vec<Instruction>, String> {
@@ -66,14 +62,23 @@ pub fn compile_literal(lit: &Literal) -> Result<Vec<Instruction>, String> {
 
 pub fn compile_s_expr(s_expr: &FunctionCall) -> Result<Vec<Instruction>, String> {
     let mut instructions = match s_expr.name {
-        // Built-in arithmetic operations
+        // Built-in arithmetic ops
         "+" => compile_binary_op(s_expr, OP_ADD),
         "-" => compile_binary_op(s_expr, OP_SUB),
         "*" => compile_binary_op(s_expr, OP_MUL),
         "/" => compile_binary_op(s_expr, OP_DIV),
         "^" => compile_binary_op(s_expr, OP_POW),
 
-        // Comparison operations
+        // Logical ops
+        "or" => compile_binary_op(s_expr, OP_OR),
+        "and" => compile_binary_op(s_expr, OP_AND),
+
+        // Bitwise ops
+        "bitwise_or" => compile_binary_op(s_expr, OP_BW_OR),
+        "bitwise_xor" => compile_binary_op(s_expr, OP_BW_XOR),
+        "bitwise_and" => compile_binary_op(s_expr, OP_BW_AND),
+
+        // Comparison ops
         "==" => compile_binary_op(s_expr, OP_EQ),
         "!=" => compile_binary_op(s_expr, OP_NE),
         "<" => compile_binary_op(s_expr, OP_LT),

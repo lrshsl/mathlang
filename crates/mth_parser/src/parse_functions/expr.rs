@@ -1,6 +1,5 @@
 use parser_lib::{cursor::Cursor, helpers::whitespace, pmatch, types::PResult};
 
-use crate::parse_functions::fn_call::parse_op;
 use mth_ast::FunctionCall;
 
 use super::*;
