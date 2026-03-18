@@ -59,7 +59,7 @@ unary
     ;
 
 primary
-	:'(' expr ')'
+	: '(' expr ')'
 	| fn_call
 	| IDENT
 	| INT
