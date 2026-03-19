@@ -2,12 +2,13 @@ use std::sync::Mutex;
 
 use glam::Vec2;
 use iced::{
-    Rectangle,
     wgpu::{self, util::DeviceExt as _},
     widget::shader,
+    Rectangle,
 };
 
-use mth_common::ops::Instruction;
+pub use mth_common::N_PLOTS;
+use mth_common::{ops::Instruction, plot_desc::PlotDesc};
 
 pub const ZOOM_PIXELS_FACTOR: f64 = 200.0;
 pub const N_INSTRUCTIONS: usize = 256;
@@ -15,17 +16,18 @@ pub const N_INSTRUCTIONS: usize = 256;
 #[derive(Copy, Clone, Debug, bytemuck::Pod, bytemuck::Zeroable)]
 #[repr(C)]
 pub struct Uniforms {
-    pub viewport_origin: Vec2,  // 8 bytes
-    pub viewport_size: Vec2,    // 8 bytes
-    pub pan_offset: Vec2,       // 8 bytes
-    pub pixel_ratio: f32,       // 4 bytes
-    pub instruction_count: u32, // 4 bytes
+    pub viewport_origin: Vec2, // 8 bytes
+    pub viewport_size: Vec2,   // 8 bytes
+    pub pan_offset: Vec2,      // 8 bytes
+    pub pixel_ratio: f32,      // 4 bytes
+    pub _pad: u32,             // 4 bytes
 }
 
 pub struct FragmentShaderPipeline {
     pipeline: wgpu::RenderPipeline,
 
     uniform_buffer: wgpu::Buffer,
+    plot_desc_buffer: wgpu::Buffer,
     bind_group_0: wgpu::BindGroup,
 
     instruction_buffer: wgpu::Buffer,
@@ -44,16 +46,28 @@ impl shader::Pipeline for FragmentShaderPipeline {
         let bind_group_layout_0 =
             device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
                 label: Some("BindGroupLayout0"),
-                entries: &[wgpu::BindGroupLayoutEntry {
-                    binding: 0,
-                    visibility: wgpu::ShaderStages::FRAGMENT,
-                    ty: wgpu::BindingType::Buffer {
-                        ty: wgpu::BufferBindingType::Uniform,
-                        has_dynamic_offset: false,
-                        min_binding_size: None,
+                entries: &[
+                    wgpu::BindGroupLayoutEntry {
+                        binding: 0,
+                        visibility: wgpu::ShaderStages::FRAGMENT,
+                        ty: wgpu::BindingType::Buffer {
+                            ty: wgpu::BufferBindingType::Uniform,
+                            has_dynamic_offset: false,
+                            min_binding_size: None,
+                        },
+                        count: None,
                     },
-                    count: None,
-                }],
+                    wgpu::BindGroupLayoutEntry {
+                        binding: 1,
+                        visibility: wgpu::ShaderStages::FRAGMENT,
+                        ty: wgpu::BindingType::Buffer {
+                            ty: wgpu::BufferBindingType::Uniform,
+                            has_dynamic_offset: false,
+                            min_binding_size: None,
+                        },
+                        count: None,
+                    },
+                ],
             });
         let bind_group_layout_1 =
             device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
@@ -62,7 +76,7 @@ impl shader::Pipeline for FragmentShaderPipeline {
                     binding: 0,
                     visibility: wgpu::ShaderStages::FRAGMENT,
                     ty: wgpu::BindingType::Buffer {
-                        ty: wgpu::BufferBindingType::Storage { read_only: true },
+                        ty: wgpu::BufferBindingType::Uniform,
                         has_dynamic_offset: false,
                         min_binding_size: None,
                     },
@@ -109,21 +123,34 @@ impl shader::Pipeline for FragmentShaderPipeline {
             mapped_at_creation: false,
         });
 
+        let plot_desc_buffer = device.create_buffer(&wgpu::BufferDescriptor {
+            label: Some("PlotDescBuffer"),
+            size: std::mem::size_of::<PlotDesc>() as u64 * N_PLOTS as u64,
+            usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST,
+            mapped_at_creation: false,
+        });
+
         // Create buffer with N_INSTRUCTIONS capacity, initialized with nop instructions
         let buffer_data = [Instruction::default(); N_INSTRUCTIONS];
         let instruction_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
             label: Some("InstructionBuffer"),
             contents: bytemuck::cast_slice(&buffer_data),
-            usage: wgpu::BufferUsages::STORAGE | wgpu::BufferUsages::COPY_DST,
+            usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST,
         });
 
         let bind_group_0 = device.create_bind_group(&wgpu::BindGroupDescriptor {
             label: Some("BindGroup0"),
             layout: &bind_group_layout_0,
-            entries: &[wgpu::BindGroupEntry {
-                binding: 0,
-                resource: uniform_buffer.as_entire_binding(),
-            }],
+            entries: &[
+                wgpu::BindGroupEntry {
+                    binding: 0,
+                    resource: uniform_buffer.as_entire_binding(),
+                },
+                wgpu::BindGroupEntry {
+                    binding: 1,
+                    resource: plot_desc_buffer.as_entire_binding(),
+                },
+            ],
         });
         let bind_group_1 = device.create_bind_group(&wgpu::BindGroupDescriptor {
             label: Some("BindGroup1"),
@@ -137,6 +164,7 @@ impl shader::Pipeline for FragmentShaderPipeline {
         Self {
             pipeline,
             uniform_buffer,
+            plot_desc_buffer,
             bind_group_0,
             instruction_buffer,
             bind_group_1,
@@ -147,6 +175,14 @@ impl shader::Pipeline for FragmentShaderPipeline {
 impl FragmentShaderPipeline {
     pub fn update_uniforms(&self, queue: &wgpu::Queue, uniforms: &Uniforms) {
         queue.write_buffer(&self.uniform_buffer, 0, bytemuck::bytes_of(uniforms));
+    }
+
+    pub fn update_plot_desc(&self, queue: &wgpu::Queue, descriptions: &[PlotDesc; N_PLOTS]) {
+        queue.write_buffer(
+            &self.plot_desc_buffer,
+            0,
+            bytemuck::cast_slice(descriptions),
+        );
     }
 
     /// Note: instruction_count also needs to be set correctly in the uniforms

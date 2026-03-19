@@ -1,7 +1,7 @@
 use std::fs;
 
-use graph_canvas::N_INSTRUCTIONS;
-use mth_common::ops::Instruction;
+use graph_canvas::{N_INSTRUCTIONS, N_PLOTS};
+use mth_common::{ops::Instruction, plot_desc::PlotDesc};
 
 use crate::{MainState, ZOOM_WHEEL_SCALE, message::Message};
 
@@ -39,13 +39,13 @@ impl MainState {
                 match code_generator::compile_module(&module) {
 
                     // Ok
-                    Ok(instructions) if instructions.len() <= N_INSTRUCTIONS => {
-                        self.write_instructions(&instructions);
+                    Ok((mut instructions, plot_desc)) if instructions.len() <= N_INSTRUCTIONS => {
+                        self.write_instructions(&mut instructions, &plot_desc);
                         self.update(Message::ClearErrors);
                     }
 
                     // Too many instructions
-                    Ok(instructions) => self.update(Message::SetError(
+                    Ok((instructions, _plot_desc)) => self.update(Message::SetError(
                         format!("The generated instructions don't fit into the GPU instruction buffer. Got {n} instructions", n = instructions.len())
                     )),
 
@@ -70,9 +70,20 @@ impl MainState {
     /// Needs to be called with a instructions buffer of length `N_INSTRUCTIONS` or less. Also,
     /// requires the length of the GPU buffer (`self.graph.instructions`) to be equal or greater
     /// than `N_INSTRUCTIONS`
-    fn write_instructions(&mut self, instructions: &[Instruction]) {
+    fn write_instructions(
+        &mut self,
+        instructions: &mut Vec<Instruction>,
+        plot_desc: &[PlotDesc; N_PLOTS],
+    ) {
+        if instructions.len() % 2 == 1 {
+            // Can only write a even amount to the shader
+            instructions.push(Instruction::default())
+        }
+
         let len = instructions.len();
-        assert!(len <= N_INSTRUCTIONS);
+        assert!(len <= N_INSTRUCTIONS); // Still true after push anyways
+
+        let len = instructions.len();
 
         // Copy instructions into the graphs mutex
         {
@@ -82,7 +93,7 @@ impl MainState {
                 .expect("Could not lock instructions mutex in MainState::update")[..len]
                 .copy_from_slice(&instructions[..len]);
         }
-        self.graph.instruction_count = len;
+        self.graph.plot_desc = *plot_desc;
         self.graph.instructions_dirty = true;
     }
 }

@@ -1,19 +1,19 @@
 use std::sync::{Arc, Mutex};
 
-use glam::{Vec2, vec2};
-use iced::{Rectangle, wgpu, widget::shader};
-use mth_common::ops::Instruction;
+use glam::{vec2, Vec2};
+use iced::{wgpu, widget::shader, Rectangle};
 
 use crate::{
     controls::Controls,
-    graph_shader_pipeline::{FragmentShaderPipeline, N_INSTRUCTIONS, Uniforms},
+    graph_shader_pipeline::{FragmentShaderPipeline, Uniforms, N_INSTRUCTIONS},
 };
+use mth_common::{ops::Instruction, plot_desc::PlotDesc, N_PLOTS};
 
 #[derive(Debug)]
 pub struct FragmentShaderPrimitive {
     controls: Controls,
     instructions: Arc<Mutex<[Instruction; N_INSTRUCTIONS]>>,
-    instruction_count: usize,
+    plot_desc: [PlotDesc; N_PLOTS],
     pub instructions_dirty: bool,
 }
 
@@ -21,13 +21,13 @@ impl FragmentShaderPrimitive {
     pub fn new(
         controls: Controls,
         instructions: Arc<Mutex<[Instruction; N_INSTRUCTIONS]>>,
-        instruction_count: usize,
+        plot_desc: [PlotDesc; N_PLOTS],
         instructions_dirty: bool,
     ) -> Self {
         Self {
             controls,
             instructions,
-            instruction_count,
+            plot_desc,
             instructions_dirty,
         }
     }
@@ -62,14 +62,15 @@ impl shader::Primitive for FragmentShaderPrimitive {
                 viewport_size,
                 pan_offset: self.controls.offset.as_vec2(),
                 pixel_ratio: self.controls.pixel_ratio() as f32,
-                instruction_count: self.instruction_count as u32,
+                _pad: 0,
             },
         );
 
         // Update instructions if necessary
         if self.instructions_dirty {
-            // Note: Doesn't write instruction_count to uniforms
-            pipeline.update_program(queue, &self.instructions, self.instruction_count);
+            let n_instructions = self.plot_desc.iter().fold(0, |acc, desc| acc + desc.length);
+            pipeline.update_plot_desc(queue, &self.plot_desc);
+            pipeline.update_program(queue, &self.instructions, n_instructions as usize);
         }
     }
 

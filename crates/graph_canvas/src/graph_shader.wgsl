@@ -1,10 +1,14 @@
 
 const STROKE_WIDTH: f32 = 1.;
 
-struct Instruction {
-    opcode: u32,
-    a: f32,
-}
+const N_INSTRUCTIONS: u32 = 256u;
+const N_INSTRUCTION_PACKS: u32 = N_INSTRUCTIONS / 2u;
+const N_PLOTS: u32 = 8u;
+const STACK_SIZE: u32 = 16u;
+
+const PLOT_TYPE_NO_PLOT: u32 = 0u;
+const PLOT_TYPE_FN_GRAPH: u32 = 1u;
+const PLOT_TYPE_EQUATION: u32 = 2u;
 
 // OpCodes
 const OP_CONST: u32 = 0;
@@ -34,19 +38,37 @@ const OP_BW_OR: u32 =  21;
 const OP_BW_XOR: u32 = 22;
 const OP_BW_AND: u32 = 23;
 
+struct Instruction {
+    opcode: u32,
+    a: f32,
+}
+
 struct Uniforms {
     viewport_origin: vec2f,
     viewport_size: vec2f,
     pan_offset: vec2f,
     pixel_ratio: f32,
-    instruction_count: u32,
-};
+    _pad: u32,
+}
+
+struct PlotDesc {
+    length: u32,
+    type_id: u32,
+    _pad: vec2f,   // 16-byte alignment
+}
+
+// 8 bytes per instruction ==> 256 instructions = 2KB
+alias InstructionArray = array<vec4<u32>, N_INSTRUCTION_PACKS>; 
+alias PlotDescArray = array<PlotDesc, N_PLOTS>;
 
 @group(0) @binding(0)
 var<uniform> u: Uniforms;
 
+@group(0) @binding(1)
+var<uniform> plot_desc: PlotDescArray;
+
 @group(1) @binding(0)
-var<storage, read> instructions: array<Instruction>;
+var<uniform> instructions: InstructionArray;
 
 struct VertexIn {
     @builtin(vertex_index)
@@ -63,43 +85,6 @@ fn vs_main(in: VertexIn) -> VertexOut {
     let uv = vec2f(vec2u((in.vertex_index << 1) & 2, in.vertex_index & 2));
     let position = vec4f(uv * 2. - 1., 0., 1.);
     return VertexOut(position);
-}
-
-// Helper function to check if instructions contain equality operations
-fn is_boolean_condition() -> bool {
-    for (var i: u32 = 0u; i < u.instruction_count; i = i + 1u) {
-        if instructions[i].opcode == OP_EQ
-            || instructions[i].opcode == OP_EQ
-            || instructions[i].opcode == OP_GT
-            || instructions[i].opcode == OP_LT
-            || instructions[i].opcode == OP_GE
-            || instructions[i].opcode == OP_LE
-        {
-            return true;
-        }
-    }
-    return false;
-}
-
-fn is_on_curve(x: f32, y: f32, d: f32) -> bool {
-    let curve_y = eval_function(x, 0.0); // y coordinate not used for 1D functions
-
-    // Calculate distance from curve //
-
-    // Central difference (+dx -dx) for more precision
-    let screen_space_deriv_y = dpdxFine(eval_function(x, 0.0));
-    let screen_space_deriv_x = dpdxFine(x);
-    let dy = screen_space_deriv_y / screen_space_deriv_x;
-    
-    // Vertical distance to the curve
-    let vertical_dist = y - curve_y;
-
-    // Normalize
-    // We divide by length of gradient vector vec2f(1.0, dy)
-    // This turns vertical distance into perpendicular distance
-    let dist = abs(vertical_dist) / sqrt(1.0 + dy * dy);
-
-    return dist < d;
 }
 
 @fragment
@@ -119,37 +104,98 @@ fn fs_main(in: VertexOut) -> @location(0) vec4f {
     p.y = -p.y; // invert y axis for mathematics
 
     // Draw function
+    return draw_graph(p, d);
+}
+
+
+fn draw_graph(p: vec2f, d: f32) -> vec4f {
     var color = 0.0;
-    if is_boolean_condition() {
+    var offset: u32 = 0;
 
-        // Boolean condition rendering
-        color = eval_function(p.x, p.y);
-
-    } else if is_on_curve(p.x, p.y, d) {
-
-        // Traditional curve rendering
-        color = 1.0;
-
-    } else if abs(p.x) < d || abs(p.y) < d {
-
+    if abs(p.x) < d || abs(p.y) < d {
         // x and y axis
         color = 0.3;
+    }
+
+    for (var i: u32 = 0; i < N_PLOTS; i = i + 1u) {
+
+        let desc = plot_desc[i];
+        switch desc.type_id {
+            case PLOT_TYPE_NO_PLOT: {
+                return vec4f(color, color, color, 1.0);
+            }
+
+            case PLOT_TYPE_FN_GRAPH: {
+                color = max(color, is_on_curve(offset, desc.length, p.x, p.y, d));
+            }
+
+            case PLOT_TYPE_EQUATION: {
+                color = max(color, eval_function(offset, desc.length, p.x, p.y));
+            }
+
+            default: {
+                return vec4f(1.0, 0.0, 1.0, 1.0); // magenta == error
+            }
+        }
+
+        offset = offset + desc.length;
+
+        if color < 0.0 {
+            // magenta == error
+            return vec4f(1.0, 0.0, 1.0, 1.0);
+        }
     }
 
     return vec4f(color, color, color, 1.0);
 }
 
-fn spow(a: f32, b: f32) -> f32 {
-    if a >= 0.0 {
-        return pow(a, b);
+
+fn is_on_curve(offset: u32, len: u32, x: f32, y: f32, d: f32) -> f32 {
+    let curve_y = eval_function(offset, len, x, 0.0); // y coordinate not used for 1D functions
+
+    // Calculate distance from curve //
+
+    // Central difference (+dx -dx) for more precision
+    let screen_space_deriv_y = dpdxFine(eval_function(offset, len, x, 0.0));
+    let screen_space_deriv_x = dpdxFine(x);
+    let dy = screen_space_deriv_y / screen_space_deriv_x;
+    
+    // Vertical distance to the curve
+    let vertical_dist = y - curve_y;
+
+    // Normalize
+    // We divide by length of gradient vector vec2f(1.0, dy)
+    // This turns vertical distance into perpendicular distance
+    let dist = abs(vertical_dist) / sqrt(1.0 + dy * dy);
+
+    return step(dist, d);
+}
+
+
+// Unified function for both 1D and 2D evaluation
+// returns -1.0 on error
+fn eval_function(offset: u32, len: u32, x: f32, y: f32) -> f32 {
+    var stack: array<f32, STACK_SIZE>;
+    var sp: u32 = 0;
+
+    if offset + len >= N_INSTRUCTIONS {
+        return -1.0;
     }
 
-    let abs_pow = pow(-a, b);
+    for (var i: u32 = 0u; i < len; i = i + 1u) {
+        let op = get_instruction(offset + i);
 
-    // If y is even, result is positive; else negative
-    let b_is_even = fract(b * 0.5) == 0.0;
-    return select(-abs_pow, abs_pow, b_is_even);
+        execute_instruction(op, x, y, &sp, &stack);
+
+        if sp >= STACK_SIZE {
+            return -1.0;
+        }
+
+    }
+
+    return stack[0];
 }
+
 
 // Extracted function to handle individual instruction execution
 fn execute_instruction(op: Instruction, x: f32, y: f32, sp: ptr<function, u32>, stack: ptr<function, array<f32, 16>>) {
@@ -261,17 +307,35 @@ fn execute_instruction(op: Instruction, x: f32, y: f32, sp: ptr<function, u32>, 
     }
 }
 
-// Unified function for both 1D and 2D evaluation
-fn eval_function(x: f32, y: f32) -> f32 {
-    var stack: array<f32, 16>; // simple fixed-size stack
-    var sp: u32 = 0;
-
-    for (var i: u32 = 0u; i < u.instruction_count; i = i + 1u) {
-        let op = instructions[i];
-        execute_instruction(op, x, y, &sp, &stack);
+fn spow(a: f32, b: f32) -> f32 {
+    if a >= 0.0 {
+        return pow(a, b);
     }
-    return stack[0];
+
+    let abs_pow = pow(-a, b);
+
+    // If y is even, result is positive; else negative
+    let b_is_even = fract(b * 0.5) == 0.0;
+    return select(-abs_pow, abs_pow, b_is_even);
+}
+
+// Unpack the instruction at `index`
+fn get_instruction(index: u32) -> Instruction {
+    let vec_idx = index / 2u;
+    let is_second = index % 2u;
+    
+    let raw_data = instructions[vec_idx];
+    
+    // If is_second is 0, we read X/Y. If 1, we read Z/W.
+    // We multiply by 2 to shift our access to the correct half of the vec4.
+    let base_component = is_second * 2u; 
+    
+    var inst: Instruction;
+    inst.opcode = raw_data[base_component];
+    inst.a = bitcast<f32>(raw_data[base_component + 1u]);
+    
+    return inst;
 }
 
 
-    // vim: et sw=4 sts=4 ts=4
+// vim: et sw=4 sts=4 ts=4

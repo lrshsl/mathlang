@@ -1,13 +1,14 @@
 use std::sync::{Arc, Mutex};
 
-use glam::{DVec2, dvec2};
+use glam::{dvec2, DVec2};
 use iced::{
-    Event, Rectangle, mouse,
-    widget::{Action, shader},
+    mouse,
+    widget::{shader, Action},
+    Event, Rectangle,
 };
 
-use graph_canvas::{FragmentShaderPrimitive, N_INSTRUCTIONS, controls::Controls};
-use mth_common::ops::Instruction;
+use graph_canvas::{controls::Controls, FragmentShaderPrimitive, N_INSTRUCTIONS, N_PLOTS};
+use mth_common::{ops::Instruction, plot_desc::PlotDesc};
 
 use crate::message::Message;
 
@@ -16,7 +17,7 @@ impl Default for Graph {
         Self {
             controls: Controls::default(),
             instructions: Arc::new(Mutex::new([Instruction::default(); N_INSTRUCTIONS])),
-            instruction_count: 0,
+            plot_desc: [PlotDesc::default(); N_PLOTS],
             instructions_dirty: false,
         }
     }
@@ -25,7 +26,7 @@ impl Default for Graph {
 pub struct Graph {
     pub controls: Controls,
     pub instructions: Arc<Mutex<[Instruction; N_INSTRUCTIONS]>>,
-    pub instruction_count: usize,
+    pub plot_desc: [PlotDesc; N_PLOTS],
     pub instructions_dirty: bool,
 }
 
@@ -42,7 +43,7 @@ impl shader::Program<Message> for Graph {
         FragmentShaderPrimitive::new(
             self.controls,
             Arc::clone(&self.instructions),
-            self.instruction_count,
+            self.plot_desc,
             self.instructions_dirty,
         )
     }

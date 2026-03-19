@@ -1,5 +1,5 @@
 mod codegen;
-pub use codegen::compile_module;
+pub use codegen::{compile_fn, compile_module};
 
 #[cfg(test)]
 mod tests;
