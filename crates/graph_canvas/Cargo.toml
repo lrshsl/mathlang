@@ -8,4 +8,4 @@ mth_common = { path = "../mth_common" }
 
 bytemuck = { version = "1.25.0", features = ["derive"] }
 glam = { version = "0.31.0", features = ["bytemuck"] }
-iced = { version = "0.14.0", features = ["canvas", "highlighter", "advanced"] }
+iced = { version = "0.14.0", features = ["canvas", "highlighter", "advanced", "webgl"] }

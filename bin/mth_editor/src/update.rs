@@ -1,9 +1,7 @@
-use std::fs;
-
 use graph_canvas::{N_INSTRUCTIONS, N_PLOTS};
 use mth_common::{ops::Instruction, plot_desc::PlotDesc};
 
-use crate::{MainState, ZOOM_WHEEL_SCALE, message::Message};
+use crate::{message::Message, MainState, ZOOM_WHEEL_SCALE};
 
 impl MainState {
     pub fn update(&mut self, msg: Message) {
@@ -32,7 +30,9 @@ impl MainState {
         match mth_parser::parse_program(&text) {
             // Ok
             Ok((rem, module)) if rem.remainder.is_empty() => {
-                fs::write("output/last_ast", format!("{module:#?}"))
+
+                #[cfg(not(target_arch = "wasm32"))]
+                std::fs::write("output/last_ast", format!("{module:#?}"))
                     .expect("Couldn't write ast to file: output dir doesn't exists?");
 
                 // Codegen
